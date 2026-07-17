@@ -1,0 +1,17 @@
+#__pagepal-save-btn {
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+#__pagepal-save-btn:hover {
+  background: #2d3a4a;
+  transform: scale(1.02);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+#__pagepal-save-btn:active {
+  transform: scale(0.98);
+}
+
+#__pagepal-toast {
+  font-family: system-ui, -apple-system, sans-serif;
+}

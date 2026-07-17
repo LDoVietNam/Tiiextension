@@ -1,0 +1,98 @@
+{
+  "schema": "cnagent-config/2",
+  "mode": "dev",
+  "active_profile": "package",
+  "data_dir": "./runtime",
+  "profiles": [
+    {
+      "id": "package",
+      "roots": [
+        {
+          "id": "package-root",
+          "path": "../..",
+          "read_only": false
+        }
+      ],
+      "payload_roots": [
+        "../../payloads"
+      ],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.run",
+        "payload.load",
+        "browser.control",
+        "provider.list",
+        "provider.status",
+        "provider.request"
+      ],
+      "process": {
+        "allow": [
+          "node",
+          "npm",
+          "npx",
+          "pnpm",
+          "yarn",
+          "git",
+          "python",
+          "python3",
+          "go",
+          "cargo",
+          "powershell",
+          "pwsh",
+          "cmd"
+        ],
+        "shell": false,
+        "max_concurrency": 2,
+        "default_timeout_ms": 120000,
+        "max_output_bytes": 1048576
+      },
+      "filesystem": {
+        "max_read_bytes": 4194304,
+        "max_write_bytes": 16777216,
+        "max_results": 1000,
+        "deny_globs": [
+          "**/*.pem",
+          "**/id_rsa*"
+        ],
+        "redact_globs": [
+          "**/.env*"
+        ],
+        "snapshot_retention_days": 14,
+        "transaction_max_bytes": 1073741824
+      }
+    }
+  ],
+  "provider": {
+    "preferred": "chatgpt-web",
+    "domains": [
+      "https://chatgpt.com/*",
+      "https://chat.openai.com/*"
+    ],
+    "max_iterations": 20,
+    "response_timeout_ms": 180000
+  },
+  "native_hosts": {
+    "preferred": "com.chatgpt_native_agent.host",
+    "compatible": [
+      "com.openai.codexextension",
+      "com.openai.codexextension.dev",
+      "com.openai.codexextension.internal"
+    ]
+  },
+  "trusted_publishers_file": "./trusted-publishers.json",
+  "api": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 1840,
+    "token_file": "./secrets/local-api.token",
+    "allowed_origins": [
+      "chrome-extension://ojjbdgfmnedbnpadfnmgkolfmhipkefi"
+    ]
+  },
+  "audit": {
+    "path": "./runtime/audit.jsonl",
+    "retention_days": 30,
+    "hash_chain": true
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "schema": "cnagent-config/2",
+  "mode": "dev",
+  "active_profile": "default",
+  "profiles": [
+    {
+      "id": "default",
+      "roots": [
+        {
+          "id": "workspace-root",
+          "path": "..",
+          "read_only": false
+        }
+      ],
+      "capabilities": [
+        "filesystem.read",
+        "filesystem.write",
+        "process.run"
+      ],
+      "process": {
+        "allow": ["node", "npm", "npx", "pnpm", "yarn", "git"],
+        "shell": false,
+        "max_concurrency": 2,
+        "default_timeout_ms": 120000,
+        "max_output_bytes": 1048576
+      },
+      "filesystem": {
+        "max_read_bytes": 4194304,
+        "max_write_bytes": 16777216,
+        "max_results": 1000,
+        "deny_globs": ["**/*.pem", "**/id_rsa*"],
+        "redact_globs": ["**/.env*"]
+      }
+    }
+  ],
+  "api": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 1840,
+    "allowed_origins": ["chrome-extension://ojjbdgfmnedbnpadfnmgkolfmhipkefi"]
+  }
+}

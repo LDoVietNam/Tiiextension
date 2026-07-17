@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.chatgpt-native-agent/protocol-envelope.schema.json",
+  "title": "cnagent/1 Envelope",
+  "type": "object",
+  "properties": {
+    "protocol": { "const": "cnagent/1" },
+    "task_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "block_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "meta": { "type": "object" },
+    "agent_goal": { "$ref": "#/$defs/agentGoal" },
+    "agent_action": { "$ref": "#/$defs/agentAction" },
+    "tool_call": { "$ref": "#/$defs/toolCall" },
+    "payload_load": { "$ref": "#/$defs/payloadLoad" },
+    "task_result": { "$ref": "#/$defs/taskResult" },
+    "task_event": { "$ref": "#/$defs/taskEvent" },
+    "filesystem_read": { "$ref": "#/$defs/filesystemRead" },
+    "filesystem_write": { "$ref": "#/$defs/filesystemWrite" },
+    "filesystem_patch": { "$ref": "#/$defs/filesystemPatch" },
+    "filesystem_search": { "$ref": "#/$defs/filesystemSearch" }
+  },
+  "required": ["protocol", "block_id"],
+  "oneOf": [
+    { "required": ["agent_goal"] },
+    { "required": ["agent_action"] },
+    { "required": ["tool_call"] },
+    { "required": ["payload_load"] },
+    { "required": ["task_result"] },
+    { "required": ["task_event"] },
+    { "required": ["filesystem_read"] },
+    { "required": ["filesystem_write"] },
+    { "required": ["filesystem_patch"] },
+    { "required": ["filesystem_search"] }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "agentGoal": {
+      "type": "object",
+      "required": ["goal"],
+      "properties": {
+        "goal": { "type": "string", "minLength": 1, "maxLength": 200000 },
+        "workspace_profile": { "type": "string", "minLength": 1 },
+        "success_criteria": { "type": "array", "items": { "type": "string" }, "maxItems": 100 },
+        "max_iterations": { "type": "integer", "minimum": 1, "maximum": 100 }
+      },
+      "additionalProperties": false
+    },
+    "agentAction": {
+      "type": "object",
+      "required": ["action"],
+      "properties": {
+        "action": { "type": "string", "minLength": 1 },
+        "args": { "type": "object" },
+        "timeout_ms": { "type": "integer", "minimum": 1, "maximum": 600000 }
+      },
+      "additionalProperties": false
+    },
+    "toolCall": {
+      "type": "object",
+      "required": ["tool"],
+      "properties": {
+        "call_id": { "type": "string", "minLength": 1 },
+        "tool": { "type": "string", "minLength": 1 },
+        "args": { "type": "object" },
+        "idempotency_key": { "type": "string", "minLength": 1, "maxLength": 300 }
+      },
+      "additionalProperties": false
+    },
+    "payloadLoad": {
+      "type": "object",
+      "anyOf": [{ "required": ["manifest_path"] }, { "required": ["path"] }],
+      "properties": {
+        "manifest_path": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "expected_name": { "type": "string" },
+        "expected_version": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "taskResult": {
+      "type": "object",
+      "properties": {
+        "call_id": { "type": "string" },
+        "ok": { "type": "boolean" },
+        "summary": { "type": "string" },
+        "data": {},
+        "error": { "type": "object" },
+        "artifacts": { "type": "array" },
+        "metrics": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "taskEvent": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "cursor": { "type": "integer", "minimum": 0 },
+        "type": { "type": "string", "minLength": 1 },
+        "at": { "type": "string" },
+        "data": {}
+      },
+      "additionalProperties": false
+    },
+    "filesystemRead": {
+      "type": "object",
+      "required": ["path"],
+      "properties": { "path": { "type": "string", "minLength": 1 }, "max_bytes": { "type": "integer", "minimum": 1 } },
+      "additionalProperties": true
+    },
+    "filesystemWrite": {
+      "type": "object",
+      "required": ["path", "content"],
+      "properties": { "path": { "type": "string", "minLength": 1 }, "content": { "type": "string" } },
+      "additionalProperties": true
+    },
+    "filesystemPatch": {
+      "type": "object",
+      "required": ["path", "search", "replace"],
+      "properties": { "path": { "type": "string", "minLength": 1 }, "search": { "type": "string" }, "replace": { "type": "string" } },
+      "additionalProperties": true
+    },
+    "filesystemSearch": {
+      "type": "object",
+      "required": ["query"],
+      "properties": { "path": { "type": "string" }, "query": { "type": "string", "minLength": 1 }, "max_results": { "type": "integer", "minimum": 1 } },
+      "additionalProperties": true
+    }
+  }
+}

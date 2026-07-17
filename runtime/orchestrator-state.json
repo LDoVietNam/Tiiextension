@@ -1,0 +1,10 @@
+{
+  "tunnel_url": null,
+  "tunnel_pid": null,
+  "api_pid": 54060,
+  "log_file": ".\\runtime\\orchestrator\\up-20260715-015821.log",
+  "mcp_pid": null,
+  "started_at": "2026-07-15T01:58:21.7905605+07:00",
+  "api_url": "http://127.0.0.1:1840",
+  "api_token_file": "Z:\\01_PROJECTS\\apps\\Tiiextension\\native-host\\config\\secrets\\local-api.token"
+}

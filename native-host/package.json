@@ -1,0 +1,13 @@
+{
+  "name": "tiiextension-native-host",
+  "version": "1.3.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "chatgpt-native-agent-host": "./bin/chatgpt-native-agent-host.js",
+    "chatgpt-native-agent": "./bin/agent-cli.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

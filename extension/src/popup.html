@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>OpenBrowser</title>
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <main>
+      <header class="header">
+        <img class="logo" src="../icons/favicon.png" alt="OpenBrowser" width="28" height="28" />
+        <h1>OpenBrowser</h1>
+        <span class="version">v0.8.2</span>
+      </header>
+
+      <section class="card" id="bridge-card">
+        <div class="card-title">Bridge</div>
+        <div class="status-row">
+          <span class="dot" id="bridge-dot"></span>
+          <span id="bridge-status">Checking...</span>
+        </div>
+        <div class="meta" id="bridge-meta">127.0.0.1:5000</div>
+      </section>
+
+      <section class="card" id="page-card">
+        <div class="card-title">Current Page</div>
+        <div class="status-row">
+          <span class="dot" id="page-dot"></span>
+          <span id="page-host">—</span>
+        </div>
+        <div class="meta" id="page-provider">—</div>
+      </section>
+
+      <section class="card" id="backend-card">
+        <div class="card-title">Backend</div>
+        <div class="status-row">
+          <span class="dot" id="backend-dot"></span>
+          <span id="backend-status">Checking...</span>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-title">Providers</div>
+        <ul id="provider-list" class="provider-list"></ul>
+      </section>
+
+      <section class="card">
+        <div class="card-title">Open Tabs</div>
+        <div class="meta" id="tabs-summary">0 tabs</div>
+      </section>
+
+      <button id="check" type="button">Refresh Status</button>
+    </main>
+    <script type="module" src="./popup.js"></script>
+  </body>
+</html>

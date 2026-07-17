@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tiiextension Side Panel</title>
+    <link rel="stylesheet" href="./sidepanel.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Tiiextension</h1>
+          <p>AI Agent Assistant</p>
+        </div>
+        <button id="refresh-all" class="icon-button" type="button" title="Refresh all">↻</button>
+      </header>
+
+      <section class="status-strip" aria-label="Backend connection status">
+        <span id="ctx-bridge-status" class="status-pill pending" title="Context Bridge · file/MCP tools · http://127.0.0.1:3333">File tools</span>
+        <span id="go-bridge-status" class="status-pill pending" title="Go Runtime Bridge · pairing · ws://127.0.0.1:9000">Runtime</span>
+        <span id="job-bridge-status" class="status-pill pending" title="Job Bridge · Run with ChatGPT · http://127.0.0.1:5050">Job Bridge</span>
+      </section>
+
+      <nav class="panel-tabs" aria-label="Agent workspace">
+        <button class="panel-tab active" data-panel="agent" type="button">Agent</button>
+        <button class="panel-tab" data-panel="files" type="button">Files</button>
+        <button class="panel-tab" data-panel="changes" type="button">Changes</button>
+        <button class="panel-tab" data-panel="activity" type="button">Activity</button>
+      </nav>
+
+      <section class="panel-view active" data-view="agent" aria-labelledby="agent-heading">
+        <div class="section-heading">
+          <div><span class="eyebrow">AUTONOMOUS GOAL</span><h2 id="agent-heading">What should the agent do?</h2></div>
+          <span id="task-state" class="state-label">Idle</span>
+        </div>
+        <div class="model-cookie-section">
+          <div class="model-cookie-header">
+            <span class="eyebrow">MODEL FROM COOKIE</span>
+            <button id="refresh-model-cookie" class="icon-button" title="Refresh model from cookie">↻</button>
+          </div>
+          <div class="model-cookie-display">
+            <span id="model-from-cookie" class="model-badge">Dang kiem tra...</span>
+            <span id="model-effort" class="effort-badge"></span>
+          </div>
+          <div id="cookie-status" class="cookie-status-text"></div>
+        </div>
+        <textarea id="goal" rows="7" placeholder="Try: Explain how photosynthesis works or analyze this codebase..."></textarea>
+        <div class="action-row">
+          <button id="run-goal" class="primary" type="button">Run with ChatGPT</button>
+          <button id="cancel-task" class="secondary danger" type="button" disabled>Cancel</button>
+          <button id="clear-chat" class="secondary" type="button" title="Clear chat history">🗑️</button>
+        </div>
+        <p class="bridge-hint">Sends a job to the Job Bridge (<code>http://127.0.0.1:5050</code>) → your ChatGPT tab executes it.</p>
+        <div id="task-summary" class="summary-card empty">No active task.</div>
+        <div id="agent-messages" class="message-feed" aria-live="polite" aria-label="Agent conversation"></div>
+      </section>
+
+      <section class="panel-view" data-view="files" aria-labelledby="files-heading" hidden>
+        <div class="section-heading compact">
+          <div><span class="eyebrow">WORKSPACE</span><h2 id="files-heading">Files and search</h2></div>
+          <button id="refresh-tree" class="icon-button" type="button" title="Refresh file tree">↻</button>
+        </div>
+        <label class="field-label" for="workspace-select">Root</label>
+        <div class="select-wrapper">
+          <select id="workspace-select"></select>
+          <button id="refresh-current" class="icon-button" type="button" title="Refresh current folder">⟳</button>
+        </div>
+        <div class="search-row">
+          <input id="search-input" type="search" placeholder="Search text or glob..." aria-label="Search input">
+          <select id="search-kind" aria-label="Search type">
+            <option value="text">Text</option>
+            <option value="glob">Glob</option>
+          </select>
+          <button id="run-search" type="button" aria-label="Run search">Search</button>
+        </div>
+        <div class="split-pane">
+          <div class="pane">
+            <div class="pane-title">Explorer</div>
+            <div id="file-tree" class="file-tree" role="tree" aria-label="File explorer"></div>
+          </div>
+          <div class="pane preview-pane">
+            <div id="preview-title" class="pane-title">Preview</div>
+            <pre id="file-preview" tabindex="0" aria-label="File preview">Select a file to preview it.</pre>
+          </div>
+        </div>
+        <div class="pane search-results-pane">
+          <div class="pane-title">Search results</div>
+          <div id="search-results" class="result-list" aria-label="Search results">No search yet.</div>
+        </div>
+      </section>
+
+      <section class="panel-view" data-view="changes" aria-labelledby="changes-heading" hidden>
+        <div class="section-heading compact">
+          <div><span class="eyebrow">TRANSACTIONS</span><h2 id="changes-heading">Changes and recovery</h2></div>
+          <button id="refresh-changes" class="icon-button" type="button" title="Refresh changes">↻</button>
+        </div>
+        <div id="transaction-summary" class="summary-card empty">No transaction selected.</div>
+        <div class="pane">
+          <div class="pane-title">Diff / preview</div>
+          <pre id="diff-view" aria-label="Diff view">No diff available.</pre>
+        </div>
+        <div class="section-heading compact snapshots-heading">
+          <h3>Snapshots</h3>
+          <button id="create-snapshot" class="secondary" type="button" title="Create snapshot">Snapshot root</button>
+        </div>
+        <div id="snapshot-list" class="result-list" aria-label="Snapshot list">Loading snapshots...</div>
+      </section>
+
+      <section class="panel-view" data-view="activity" aria-labelledby="activity-heading" hidden>
+        <div class="section-heading compact">
+          <div><span class="eyebrow">OBSERVABILITY</span><h2 id="activity-heading">Task timeline</h2></div>
+          <button id="refresh-activity" class="icon-button" type="button" title="Refresh activity">↻</button>
+        </div>
+        <div id="task-timeline" class="timeline" aria-label="Task timeline">No task events.</div>
+        <details class="tool-console">
+          <summary>Direct tool console</summary>
+          <label class="field-label" for="direct-tool">Tool</label>
+          <input id="direct-tool" value="fs.workspace_info" aria-label="Tool selector">
+          <label class="field-label" for="direct-args">Arguments</label>
+          <textarea id="direct-args" rows="5" aria-label="Tool arguments">{}</textarea>
+          <button id="run-direct-tool" type="button" aria-label="Run direct tool">Run tool</button>
+        </details>
+        <div class="pane diagnostic-pane">
+          <div class="pane-title">Diagnostics</div>
+          <pre id="diagnostic-log" aria-live="polite" aria-label="Diagnostic log">Side panel initialized.</pre>
+        </div>
+      </section>
+    </main>
+    <!-- Pairing Modal Overlay -->
+    <div id="pairing-overlay" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h2>Ti Agent Pairing</h2>
+        <p>Enter the 6-character pairing code shown in the CLI console to connect this extension to the Ti Agent Runtime.</p>
+        <div class="pairing-input-row">
+          <input type="text" id="pairing-code-input" maxlength="6" placeholder="1A2B3C" />
+          <button id="btn-submit-pairing" class="primary">Pair</button>
+        </div>
+        <div id="pairing-error-message" class="error-text"></div>
+      </div>
+    </div>
+    <script type="module" src="./sidepanel.js"></script>
+  </body>
+</html>

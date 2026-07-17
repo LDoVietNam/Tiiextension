@@ -1,0 +1,94 @@
+name: Tirouter Automation
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Mỗi 6 giờ tự động chạy
+  workflow_dispatch:  # Có thể chạy thủ công
+
+env:
+  NVIDIA_NIM_API_KEY: ${{ secrets.NVIDIA_NIM_API_KEY }}
+
+jobs:
+  tirouter-tasks:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js (for claude-nim)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install claude-nim globally
+        run: npm install -g claude-nim
+      
+      - name: Setup Bun (optional alternative)
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+      
+      - name: Start Tirouter Stack
+        run: |
+          cd Z:\01_PROJECTS\apps\Tirouter
+          start-tirouter.bat
+        continue-on-error: true
+      
+      - name: Wait for services to be ready
+        run: |
+          Start-Sleep -Seconds 30
+          # Wait for CLIProxyAPI health endpoint
+          $maxAttempts = 15
+          $servicesReady = $false
+          for ($i = 0; $i -lt $maxAttempts; $i++) {
+            try {
+              $response = Invoke-RestMethod -Uri 'http://localhost:20128/health' -TimeoutSec 5 -ErrorAction Stop
+              Write-Host "Dịch vụ đã sẵn sàng!"
+              $servicesReady = $true
+              break
+            } catch {
+              Write-Host "Đang chờ dịch vụ... lần thử $($i+1)/$maxAttempts"
+              Start-Sleep -Seconds 10
+            }
+          }
+          if (-not $servicesReady) {
+            Write-Error "Dịch vụ không sẵn sàng sau $maxAttempts lần thử"
+            exit 1
+          }
+      
+      - name: Run agent tasks via MCP
+        run: |
+          # Thực thi task qua MCP endpoint
+          $taskResponse = curl -X POST "http://localhost:20128/v1/agent/runs" `
+            -H "Content-Type: application/json" `
+            -d '{
+              "allowed_tools": ["Bash", "Glob", "Grep", "Read"],
+              "prompt": "Chạy kiểm tra sức khỏe hệ thống và báo cáo trạng thái dịch vụ"
+            }'
+          Write-Host "Agent task response: $taskResponse"
+      
+      - name: Collect Logs
+        if: always()
+        run: |
+          # Thu thập logs để lưu làm artifact
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\logs"
+          # Lấy logs từ các services nếu có thể
+          try {
+            Invoke-RestMethod -Uri 'http://localhost:20128/api/stats' -OutFile "$env:GITHUB_WORKSPACE\logs\cliproxy-stats.json" -ErrorAction SilentlyContinue
+          } catch {}
+      
+      - name: Upload Logs Artifact
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: tirouter-logs-${{ github.run_id }}
+          path: ${{ github.workspace }}/logs/
+          retention-days: 7
+      
+      - name: Stop Tirouter Stack
+        if: always()
+        run: |
+          Write-Host "Dừng Tirouter stack..."
+          cd Z:\01_PROJECTS\apps\Tirouter
+          docker-compose -f docker-compose.tirouter.yml down 2>$null
+          taskkill /f /im claude-nim.exe 2>$null
+          Write-Host "Đã dừng các services"

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.chatgpt-native-agent/structured-blocks.schema.json",
+  "title": "ChatGPT Native Agent Structured Block",
+  "$ref": "./protocol-envelope.schema.json"
+}

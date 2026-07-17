@@ -1,0 +1,552 @@
+{
+  "schema": "cnagent-release/1",
+  "version": "1.1.0",
+  "product": "Tiiextension",
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 9627,
+      "sha256": "b42401cb182dac62620e49ac9f2de35806ad4a548b80ee32046ffef873ad408a"
+    },
+    {
+      "path": "RELEASE-NOTES.md",
+      "bytes": 3236,
+      "sha256": "fa35d38deb4f773a23f375072f7d2687f02205637e2db27877cb9445238784f5"
+    },
+    {
+      "path": "SECURITY.md",
+      "bytes": 4444,
+      "sha256": "b6ccdfd40327299f2361007f472c145e12c1f1a417c1f7fae07a144d7ef1b38a"
+    },
+    {
+      "path": "VERIFICATION.md",
+      "bytes": 2713,
+      "sha256": "d7947a2faae4b3381292580c15e240f2ee26a28abd3f58f238b0284c31f66b99"
+    },
+    {
+      "path": "cloudflare/.env.example",
+      "bytes": 311,
+      "sha256": "9631d040bd39d3855da5e9086f61c2329100a1784644202dccd6efbb01f18b87"
+    },
+    {
+      "path": "cloudflare/README.md",
+      "bytes": 784,
+      "sha256": "4cb434c2a41da4f9f3250ca733a24a2241c97fd9961eff0fcfbd36f39f52673a"
+    },
+    {
+      "path": "cloudflare/config.example.yml",
+      "bytes": 209,
+      "sha256": "65723162ee84bcdc0e90a3dba584ca9fb20afd913cb4345380df29187f607b1b"
+    },
+    {
+      "path": "docs/CLOUDFLARE-TUNNEL.md",
+      "bytes": 527,
+      "sha256": "e2d466a213ad86e01239a2612bb8afb7a5f686a45ba8e9cbe840ff0137c3677f"
+    },
+    {
+      "path": "docs/GPT-CUSTOM-ACTION.md",
+      "bytes": 779,
+      "sha256": "70c460292a302d88a81e09a37b2571aa5aeb8947f7b74318cf0b2db6bc8723ae"
+    },
+    {
+      "path": "docs/MCP-BRIDGE.md",
+      "bytes": 503,
+      "sha256": "d0a8c860ad12996e68f3b26e15e161a9e9c2d30072dc9cbd625b6a6bccad98c6"
+    },
+    {
+      "path": "docs/PAYLOADS.md",
+      "bytes": 2878,
+      "sha256": "dafb2f7ca97739ab9626b3bf3d2a7154f096a7f10dbca91a629efef24ad9dbb7"
+    },
+    {
+      "path": "docs/PROTOCOL.md",
+      "bytes": 3954,
+      "sha256": "f9acd814f379ffe28c2aea13bbb3efd55fe98ce7a278e02ca0fb4bab455e2543"
+    },
+    {
+      "path": "docs/TROUBLESHOOTING.md",
+      "bytes": 3698,
+      "sha256": "3e35e0ec452306eb6a8a804f1014a52c1e27f777488b76d25832d10cf83b0be8"
+    },
+    {
+      "path": "docs/VERIFICATION.md",
+      "bytes": 1340,
+      "sha256": "5ba14e3cc44e96e9487b6d7534ebbd8d269fc2612bb53511d0e9b59f76191c4f"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-07-10-blueprint-v2-v1-implementation.md",
+      "bytes": 23094,
+      "sha256": "7c6ce88db4479011dbfae37b5dc40601a53c68f4871e16c48f05bff6afe87dd7"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-07-10-chatgpt-native-agent-extension.md",
+      "bytes": 4075,
+      "sha256": "68f8d365bde252802c697573aa19c535ddb2823da523a9d51b021609b81a2bac"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-07-11-tiiextension-v1.1.md",
+      "bytes": 6316,
+      "sha256": "9d45835bec5d7ba8cd6a20d2fe6fa4d482d071e4f7f61ca1f0b92fcb17f1f85c"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-07-10-chatgpt-native-agent-extension-design.md",
+      "bytes": 1972,
+      "sha256": "6e4dcce39e8b2c934865af068a413232830446772ea740648dc2ac698ee6c1a2"
+    },
+    {
+      "path": "extension/manifest.json",
+      "bytes": 1262,
+      "sha256": "0412b97d5f9afcc0739e68bb59a5fe423bcd18b1ed2fc47c5864dbbaa2339de1"
+    },
+    {
+      "path": "extension/src/background.js",
+      "bytes": 15844,
+      "sha256": "fed3828f68be57db5e517fb7a61293960fd555caa77ca8d96117d625533cf81b"
+    },
+    {
+      "path": "extension/src/block-parser.js",
+      "bytes": 3136,
+      "sha256": "b0427502f773caa2deccb45d4753dc703e221bb218485333d47656f12203d9f1"
+    },
+    {
+      "path": "extension/src/browser-agent.js",
+      "bytes": 14485,
+      "sha256": "185e434f67bcee618d6752e3f09aa1cdefd5a4296865fcec89694e0986144e5a"
+    },
+    {
+      "path": "extension/src/chatgpt-adapter-core.js",
+      "bytes": 1891,
+      "sha256": "ee0bc2569c06b9d1d34621925c5d6226313f9416211f10c78a2ec1fa3c009d83"
+    },
+    {
+      "path": "extension/src/chatgpt-content.js",
+      "bytes": 17362,
+      "sha256": "0f14773857d91c830ac9e7c2411cbb253f22b1cb60cad13ad2c16700fb0728b5"
+    },
+    {
+      "path": "extension/src/native-client.js",
+      "bytes": 5483,
+      "sha256": "e9cdff2a18ab588aa873e91380cb7a8b5ff3f28396329c23a05c806cdc76db37"
+    },
+    {
+      "path": "extension/src/popup.css",
+      "bytes": 2029,
+      "sha256": "ed7c57445065aaccd26e896f222d16887164db1a2a1ee52b7bdb65819082e05d"
+    },
+    {
+      "path": "extension/src/popup.html",
+      "bytes": 2763,
+      "sha256": "a55984fe4cd1fe3ef1cc6d744a5232a902043e96925de9d16ae10f872bf4fdfc"
+    },
+    {
+      "path": "extension/src/popup.js",
+      "bytes": 6571,
+      "sha256": "b3a063e7a907df8dfd4c90547ea9d307c2f74c6e7591f7289d461d7ed76914bf"
+    },
+    {
+      "path": "extension/src/provider-coordinator.js",
+      "bytes": 3374,
+      "sha256": "471a8ef6e7593e52df8173019f2de9ebe97014c29c2547998030c12cacfa7dd5"
+    },
+    {
+      "path": "extension/src/provider-registry.js",
+      "bytes": 718,
+      "sha256": "ae07aa745a87fbc2676f323d700b92715d974ec4ca5fdbb17c25b86d56324288"
+    },
+    {
+      "path": "extension/src/sidepanel.css",
+      "bytes": 7324,
+      "sha256": "b57ddc7fa7766b09fd2e95589763a0648d37e86d8f59f467abb9f29d6e1da43d"
+    },
+    {
+      "path": "extension/src/sidepanel.html",
+      "bytes": 5782,
+      "sha256": "b8d928d5c8791c00c647ddc7ca612e6a67876ffcb9f727fac2cff4bef076a6bf"
+    },
+    {
+      "path": "extension/src/sidepanel.js",
+      "bytes": 15749,
+      "sha256": "58207aaf4c5d84b4162588f6cef2d83862323f5189ae84564dc07c037ebb58f0"
+    },
+    {
+      "path": "mcp-bridge/README.md",
+      "bytes": 323,
+      "sha256": "672a895f40644ef8277c73a48b1a765dd34af2793a9a2e976737b51706b1250c"
+    },
+    {
+      "path": "mcp-bridge/package.json",
+      "bytes": 198,
+      "sha256": "8b4c06ebdc8294d52919e386830e9cd4c98c043c5a08e4d5d663b621595987ba"
+    },
+    {
+      "path": "mcp-bridge/src/cnagent-client.js",
+      "bytes": 931,
+      "sha256": "9789d7f15ac0b5a1dae0044b3c6007fc8cf6baec3587c2776fc2bb3ec69b3dc0"
+    },
+    {
+      "path": "mcp-bridge/src/server.js",
+      "bytes": 1762,
+      "sha256": "c3353751b3658658fd49bf2d7daa06a8a3d2d36efd4ca1b2ff09a2ab3390a968"
+    },
+    {
+      "path": "mcp-bridge/src/tool-mapper.js",
+      "bytes": 816,
+      "sha256": "aa8de7e3d0821ad0a1ff8c6f130e5064d5d95d5a6352dadc756b11503b209d93"
+    },
+    {
+      "path": "native-host/bin/agent-cli.js",
+      "bytes": 5197,
+      "sha256": "618458e71c5fa593f62cc8da661ae02ae902688cdb20f089a9966c0706009282"
+    },
+    {
+      "path": "native-host/bin/agent-server.js",
+      "bytes": 1489,
+      "sha256": "61c069703ffb1f8995e0f2067a36a05629442a8988f6fbaf3890935b947a50bd"
+    },
+    {
+      "path": "native-host/bin/chatgpt-native-agent-host.cmd",
+      "bytes": 51,
+      "sha256": "86564ddef5c639ee1b6dce96a77ac28ebbed7b9030d4eafc639f13b3f6cab642"
+    },
+    {
+      "path": "native-host/bin/chatgpt-native-agent-host.js",
+      "bytes": 1804,
+      "sha256": "8fd86e9c7c28c7c00583435b59d0c9a5f1efa4c495fbc9b18a9a5e4215f9963c"
+    },
+    {
+      "path": "native-host/config/default.workspaces.json",
+      "bytes": 2033,
+      "sha256": "236275aa49a27614fc9471b7f0db0240e8dc9bcb67ac7021a5b46901aa5021d7"
+    },
+    {
+      "path": "native-host/config/trusted-publishers.json",
+      "bytes": 61,
+      "sha256": "a640c40282e954356ee801e37d0c9d06a30b55e06f6f1b58e410c37ef1894c5a"
+    },
+    {
+      "path": "native-host/package.json",
+      "bytes": 277,
+      "sha256": "a66a0d07511641bdccaa76c7a69b8b3baa712151c2ecf6335c0b03631d393f8a"
+    },
+    {
+      "path": "native-host/src/artifact-store.js",
+      "bytes": 3517,
+      "sha256": "8ad68c51a7a3efc8c0fa89b48f604e56777f2594f571d2eab4cb08fd5456a741"
+    },
+    {
+      "path": "native-host/src/audit-store.js",
+      "bytes": 2800,
+      "sha256": "8fbe14d6b9b3c8430def3fcf613c71a390a9092b50413a920a74d89bce9d2d49"
+    },
+    {
+      "path": "native-host/src/config-loader.js",
+      "bytes": 4210,
+      "sha256": "71fe5a0b720f22d438863925174b809dbe29b1732094026ded6e05bc01585e3a"
+    },
+    {
+      "path": "native-host/src/durable-store.js",
+      "bytes": 3215,
+      "sha256": "df4625975d9192e49cc1dd9dc6a3f2fcd293f60555f3dafb33a1012667075cfc"
+    },
+    {
+      "path": "native-host/src/event-bus.js",
+      "bytes": 2198,
+      "sha256": "98dc7aa66b6e1b3095c6fb6262bb92d7377ebd64801f571b9a7099471cdeda0e"
+    },
+    {
+      "path": "native-host/src/filesystem-codecs.js",
+      "bytes": 3035,
+      "sha256": "a1e02bd6e4edc36b217ce3d0fd2b09b0ec9a04199341906117479ad2f4288488"
+    },
+    {
+      "path": "native-host/src/filesystems.js",
+      "bytes": 39716,
+      "sha256": "8b10f324cfb44aa3c4ef618042d3a799ced234ce8fa5aab081df3c15acfe90a2"
+    },
+    {
+      "path": "native-host/src/local-api.js",
+      "bytes": 10209,
+      "sha256": "004630dff5464fa99029d2886c17dbfbc92b1805a59304c8d07767bffdc3b72e"
+    },
+    {
+      "path": "native-host/src/native-framing.js",
+      "bytes": 1450,
+      "sha256": "f0a148b19a96e953d23eba40d0d2468267c8b0d3ec3f7d9cb15e146b96bf31e1"
+    },
+    {
+      "path": "native-host/src/payload-loader.js",
+      "bytes": 10824,
+      "sha256": "8e75c9d8c130ca6f69b0e7cb527292c651ba1e8f75d38dc0b31ad346c12129c1"
+    },
+    {
+      "path": "native-host/src/payload-worker.js",
+      "bytes": 1399,
+      "sha256": "f83faec516eca1eb03ad7da35dacda44a8e3c54e8c9b4561d0f96f7fe50cd8df"
+    },
+    {
+      "path": "native-host/src/policy-engine.js",
+      "bytes": 4266,
+      "sha256": "bead095c8dd1f7fd161979445dc653c19f8b5cf5ade132f6ed81ea3171813233"
+    },
+    {
+      "path": "native-host/src/process-tools.js",
+      "bytes": 6990,
+      "sha256": "a4c50ff8afb7119beef279056022f7c9bebea15b8d14331143261b9326262552"
+    },
+    {
+      "path": "native-host/src/project-tools.js",
+      "bytes": 4223,
+      "sha256": "e7fa21431900615a99bfd04aa44366247b259d67d28c848b5e190c63e352addf"
+    },
+    {
+      "path": "native-host/src/protocol.js",
+      "bytes": 5958,
+      "sha256": "3363a03c4a3426588b505e6276d6d6797e8067307610b31bcd6c89d029d52f34"
+    },
+    {
+      "path": "native-host/src/runtime.js",
+      "bytes": 12691,
+      "sha256": "d3a28e9f58cadf7ebacd17bdd82fd2499aa6bf693a980afee35c89d2642af137"
+    },
+    {
+      "path": "native-host/src/task-engine.js",
+      "bytes": 6023,
+      "sha256": "2c566fbaee6bd75a677c266050162c008a177c2fe354a656f1d4945911f492c8"
+    },
+    {
+      "path": "native-host/src/tool-manifest.js",
+      "bytes": 7769,
+      "sha256": "cb0417c059ed7781dfec20064a4759001817c052eac765576ba6998cb13b9351"
+    },
+    {
+      "path": "native-host/src/transaction-manager.js",
+      "bytes": 18312,
+      "sha256": "861dab60571d3e89d5fb3cb25c941b0e8087533f6302a1218a88fa23029fc117"
+    },
+    {
+      "path": "native-host/src/unified-diff.js",
+      "bytes": 5139,
+      "sha256": "c0af35b15961031b9ba27f6c6dc4a9d7830cdc7bc55ef04e85f0bfdfeeef61ce"
+    },
+    {
+      "path": "native-host/src/websocket.js",
+      "bytes": 4268,
+      "sha256": "036fd1b72d82718d180467745da4584657ae571684588964e3002a84cc6ebc5a"
+    },
+    {
+      "path": "native-host/src/workspace-guard.js",
+      "bytes": 4484,
+      "sha256": "6684033da876a0a77a87eef42e38f85f8d7b301c5d706e6cbda39405e208e016"
+    },
+    {
+      "path": "openapi/README.md",
+      "bytes": 490,
+      "sha256": "74276d2cac594dcecd5a0591157529b8d0014fe5a4f0d501638daa1ce6f7b1a5"
+    },
+    {
+      "path": "openapi/chatgpt-action.yaml",
+      "bytes": 2429,
+      "sha256": "a13ae3b0e0b10cce7c0e0cadfa90fea616a0631cc8bb31aecbbe70485fb481ef"
+    },
+    {
+      "path": "package.json",
+      "bytes": 600,
+      "sha256": "9114a3367c0fe4d2c67da5140c096250a9b48bbcc93cb95ee2c53f4b3e4f07d0"
+    },
+    {
+      "path": "payloads/examples/hello/index.js",
+      "bytes": 192,
+      "sha256": "ec01ce11a3acd09b69bdc8b7e83cd955187d053f56042b76e4b4bf01e99cb2fe"
+    },
+    {
+      "path": "payloads/examples/hello/manifest.json",
+      "bytes": 217,
+      "sha256": "ecb4bb076d0b095036b64f96094abb17617bc37afbf7fff1b238302cb527050f"
+    },
+    {
+      "path": "schemas/protocol-envelope.schema.json",
+      "bytes": 4769,
+      "sha256": "ef1fee3846a851b744536fd9587d422a6442d3ef8c57e07a08ce662b6934086d"
+    },
+    {
+      "path": "schemas/runtime-config.schema.json",
+      "bytes": 1581,
+      "sha256": "e5f75cfc9aefe10473db8ca22c39694c70fa4641d64b266e60016a14cf6e51ab"
+    },
+    {
+      "path": "schemas/structured-blocks.schema.json",
+      "bytes": 238,
+      "sha256": "757c0762c12dde3b575dc0dffc673d6c1a1b7c9382ffbd8090000084514f84d8"
+    },
+    {
+      "path": "schemas/tool-manifest.schema.json",
+      "bytes": 1129,
+      "sha256": "feda254627ee733080b7fcff3aac8b7bcd5c59eb809ccb3e0975e69f681f5092"
+    },
+    {
+      "path": "scripts/check-syntax.mjs",
+      "bytes": 1457,
+      "sha256": "3c1397e8452105237aa5147f1c505fac28176663b48d35beeda112127434eee8"
+    },
+    {
+      "path": "scripts/doctor-tunnel.ps1",
+      "bytes": 825,
+      "sha256": "364b46b2869a3d99f6411aa22a41bc8d3b415403feabd08bc99b464e26866b5e"
+    },
+    {
+      "path": "scripts/doctor.ps1",
+      "bytes": 395,
+      "sha256": "0b84f74025bb4ac1c220e06ec2a1e183405642db673ae7439f9e1d16acd78403"
+    },
+    {
+      "path": "scripts/install-native-host.ps1",
+      "bytes": 11878,
+      "sha256": "0e86e96af63bd2e187d72cdb7778671bb1099798168ac9ddea037678111767f6"
+    },
+    {
+      "path": "scripts/package-release.mjs",
+      "bytes": 4776,
+      "sha256": "ec999532e5389b4c0a6713afc561cff737209c6d1ad3ef34ae90e133677c8f91"
+    },
+    {
+      "path": "scripts/start-api.ps1",
+      "bytes": 702,
+      "sha256": "f67fe61e753be765965b0929e9118f7e13bebf7cc8fdde39444b345e9632dee8"
+    },
+    {
+      "path": "scripts/start-tunnel.ps1",
+      "bytes": 1069,
+      "sha256": "a6532f97bbab348a5c2ccc6e8948c73ecf840eea04301130d0235c532249566a"
+    },
+    {
+      "path": "scripts/static-ui-check.mjs",
+      "bytes": 3004,
+      "sha256": "6d7f3d85c15b20f0ab9ba951c59bd7aac3c20da63be982ae75be83ee4c7ef4b3"
+    },
+    {
+      "path": "scripts/uninstall-native-host.ps1",
+      "bytes": 1599,
+      "sha256": "df95621b035ef22ecee2fdbcdb148140d030f322dce73ae75c9a1c5fe290db3f"
+    },
+    {
+      "path": "scripts/zip-writer.mjs",
+      "bytes": 3230,
+      "sha256": "0d5d1327d263c96beede7d39a516913a89bb4d7814eed787d86f0fa880b62003"
+    },
+    {
+      "path": "tests/block-parser.test.mjs",
+      "bytes": 1348,
+      "sha256": "f13ab354a6703115cfe28c8ac301add870b77e87375de2fd11f2e04f552a3dbb"
+    },
+    {
+      "path": "tests/browser-agent.test.mjs",
+      "bytes": 3515,
+      "sha256": "43e51777dacd320e5f4b43d406d2a6519cfaa29655dca37500c982ea928fd039"
+    },
+    {
+      "path": "tests/chatgpt-adapter-core.test.mjs",
+      "bytes": 1423,
+      "sha256": "9a35951317599e5445cf238ae63617fdb40234608c40e4e147f553cba44f58bf"
+    },
+    {
+      "path": "tests/cli.test.mjs",
+      "bytes": 1750,
+      "sha256": "166b0331c0ad881a01748289967a0e8a6f708828bee0959fce221b5c9d6c60a2"
+    },
+    {
+      "path": "tests/filesystem-index.test.mjs",
+      "bytes": 2889,
+      "sha256": "5a50e66f018dbbc3fc9482fe86f565cd9ba5a2ab3a8cf8fbbbbe01dafd8456a0"
+    },
+    {
+      "path": "tests/filesystem-transaction.test.mjs",
+      "bytes": 4295,
+      "sha256": "383527135db0cd53bdd0e092b5651a8778a1f0a8f1dd1f4de3e5e74237195b58"
+    },
+    {
+      "path": "tests/filesystem-watch.test.mjs",
+      "bytes": 3643,
+      "sha256": "7844edfd0b6f22dee5b348cc1a3667f43451b8deacea6c34b58ad2a0c0e11afc"
+    },
+    {
+      "path": "tests/local-api.test.mjs",
+      "bytes": 7368,
+      "sha256": "cd492435a248a981ce16ad120023248ef06f430b4a9dc6cf7d2f92322b827a35"
+    },
+    {
+      "path": "tests/mcp-bridge.test.mjs",
+      "bytes": 1232,
+      "sha256": "2aabf13bc6fb5f648e6aa8d62f5c57d5ff23fe771dd008ea23426b208cd0f2c6"
+    },
+    {
+      "path": "tests/native-framing.test.mjs",
+      "bytes": 965,
+      "sha256": "07c07ca023fe837d8dc59dbc53425ee146f37b47ca11b5ebdeb6113f4dc0c9c2"
+    },
+    {
+      "path": "tests/native-runtime.test.mjs",
+      "bytes": 4217,
+      "sha256": "3b1361a13b90d0de86bad5dcf69c9c8deaa68c4efc423b0d979e4345208ffcb1"
+    },
+    {
+      "path": "tests/openapi-contract.test.mjs",
+      "bytes": 994,
+      "sha256": "26e7c126eae7e3f4f2f73bb9d4d6a9f259bcb2d1f7d6ca6789a394db03fc313c"
+    },
+    {
+      "path": "tests/operations-contract.test.mjs",
+      "bytes": 2919,
+      "sha256": "7bd4f3fe9b75a187b73c82a1d9fe90e2d9224c25b754eefde154b0385b839061"
+    },
+    {
+      "path": "tests/packaging.test.mjs",
+      "bytes": 3620,
+      "sha256": "f2cb8b490474c5b8fc770c4b4ce997786d74f0d24b8d4a44bfbd04dfa4911db1"
+    },
+    {
+      "path": "tests/process-payload.test.mjs",
+      "bytes": 8965,
+      "sha256": "11ae05e7217d7fab9eee1731da3741e648bf477d4fa2263d9549ec597e98a014"
+    },
+    {
+      "path": "tests/protocol.test.mjs",
+      "bytes": 2294,
+      "sha256": "f2ada0fad937d9f825542c240b0a90561b514ba842572d6553471072b0980c7a"
+    },
+    {
+      "path": "tests/provider-coordinator.test.mjs",
+      "bytes": 2687,
+      "sha256": "b356d15a8e68554958317003f36d63f8eb42705c47b7c629c44b3254018ed3e3"
+    },
+    {
+      "path": "tests/runtime-v1.test.mjs",
+      "bytes": 5189,
+      "sha256": "3cae6f1e4f01591a971dc945095029f936913793aa511f1122dd95e55bf4fadc"
+    },
+    {
+      "path": "tests/task-engine.test.mjs",
+      "bytes": 4021,
+      "sha256": "3f1e4aac8bbc6e30dc3ec287b2e81b08ce4e0dfc45c9f3b3ee214111ec415ad1"
+    },
+    {
+      "path": "tests/ui-contract.test.mjs",
+      "bytes": 1434,
+      "sha256": "49ed3cb28d95ca36cc14f82af29d7a46ee2f21eca8610b26b94bde9958445580"
+    },
+    {
+      "path": "tests/unified-diff.test.mjs",
+      "bytes": 1122,
+      "sha256": "968bd5753a6649182930a411ece31bf81e4838e0893635c26cb200037b2ddb1a"
+    },
+    {
+      "path": "tests/workspace-policy.test.mjs",
+      "bytes": 4122,
+      "sha256": "3e7c64c64cf633cec5e78221ea4c69bdd7db5805a73d7e6d7d3ad67e3453482a"
+    },
+    {
+      "path": "docs/BLUEPRINT-v2.md",
+      "bytes": 66388,
+      "sha256": "d290426426ef9731ec14e06253faaff919ba0937e053d9a59a6890024c79de21"
+    }
+  ]
+}

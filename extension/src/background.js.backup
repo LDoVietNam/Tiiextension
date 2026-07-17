@@ -1,0 +1,365 @@
+// background.js - Enhanced with CDP engine + Session manager + Event bus
+// Patterns from ChatGPT Codex: persistent CDP, tab leasing, event-driven architecture, heartbeat
+
+import { runtime, tabs } from './browser-polyfill.js';
+import { sendNative, connectNative, startHeartbeat, stopHeartbeat, startReconnectAlarm, stopReconnectAlarm, checkHeartbeat, getNativeStatus, onNativeStatus } from './native-client.js';
+import { fetchGatewayModels } from './provider-gateway.js';
+import { parseStructuredBlocks } from './block-parser.js';
+import { getCdpEngine } from './cdp-engine.js';
+import { getSessionManager } from './session-manager.js';
+import { getEventBus } from './event-bus.js';
+import { getModelSelector } from './model-selector.js';
+
+// Initialize engines
+const cdp = getCdpEngine();
+const sessions = getSessionManager();
+const bus = getEventBus();
+const modelSelector = getModelSelector();
+
+// ====== Initialization ======
+async function initialize() {
+  // Load persisted sessions
+  await sessions.loadFromStorage();
+
+  // Register RPC handlers
+  bus.register("ping", () => ({ pong: true, timestamp: Date.now() }));
+  bus.register("status", () => ({
+    native: getNativeStatus(),
+    cdp: cdp.getActiveSessions().size,
+    sessions: sessions.getActiveSessions().size,
+    eventBus: bus.getStats()
+  }));
+
+  // Model selection RPC (agent-driven, not user-picked)
+  bus.register("model.select", async ({ goal, constraints }) => {
+    return modelSelector.selectModel(goal, { constraints });
+  });
+  bus.register("model.analyze", ({ goal }) => modelSelector.analyzeTask(goal));
+
+  // Set up alarm handlers
+  setupAlarms();
+
+  // Start heartbeat
+  await startHeartbeat();
+
+  // Connect native host
+  connectNative().catch(() => {
+    // Will retry via alarm
+  });
+}
+
+// ====== Alarm handlers (pattern from Codex) ======
+function setupAlarms() {
+  runtime.onAlarm?.addListener(async (alarm) => {
+    switch (alarm.name) {
+      case "native-host-heartbeat":
+        await checkHeartbeat();
+        break;
+      case "native-host-reconnect":
+        if (!getNativeStatus().connected) {
+          connectNative().catch(() => {});
+        }
+        break;
+      default:
+        // Unknown alarm - ignore
+        break;
+    }
+  });
+}
+
+// ====== Message Router ======
+runtime.onMessage.addListener((message, sender, sendResponse) => {
+  const { type, payload, ...options } = message || {};
+
+  if (!type || typeof type !== 'string') {
+    return sendResponse({ ok: false, error: { message: 'Invalid message type' } });
+  }
+
+  // RPC-style messages
+  if (type.startsWith('rpc.')) {
+    handleRpc(type, payload, sender)
+      .then((result) => sendResponse({ ok: true, result }))
+      .catch((error) => sendResponse({
+        ok: false,
+        error: { message: error.message, code: error.code, retryable: Boolean(error.retryable) }
+      }));
+    return true;
+  }
+
+  // CDP actions
+  if (type.startsWith('cdp.')) {
+    handleCdpAction(type, payload, sender)
+      .then((result) => sendResponse({ ok: true, result }))
+      .catch((error) => sendResponse({
+        ok: false,
+        error: { message: error.message, code: error.code, retryable: Boolean(error.retryable) }
+      }));
+    return true;
+  }
+
+  // Native host actions
+  if (type.startsWith('native.')) {
+    const nativeType = type.slice('native.'.length);
+    sendNative(nativeType, payload, options)
+      .then((result) => sendResponse({ ok: true, result }))
+      .catch((error) => sendResponse({
+        ok: false,
+        error: {
+          message: error.message,
+          code: error.code,
+          retryable: Boolean(error.retryable),
+          details: error.details
+        }
+      }));
+    return true;
+  }
+
+  // Provider model fetch
+  if (type === 'provider.fetchModels') {
+    fetchGatewayModels()
+      .then((result) => sendResponse({ ok: true, result }))
+      .catch((error) => sendResponse({ ok: false, error: { message: error.message } }));
+    return true;
+  }
+
+  // ChatGPT web messages
+  if (type.startsWith('chatgpt.')) {
+    handleChatGptMessage(type, payload, options, sender)
+      .then((result) => sendResponse({ ok: true, result }))
+      .catch((error) => sendResponse({ ok: false, error: { message: error.message } }));
+    return true;
+  }
+
+  // Session management
+  if (type.startsWith('session.')) {
+    handleSessionMessage(type, payload)
+      .then((result) => sendResponse({ ok: true, result }))
+      .catch((error) => sendResponse({ ok: false, error: { message: error.message } }));
+    return true;
+  }
+
+  // Browser actions (from browser-agent.js)
+  if (type.startsWith('browser.')) {
+    handleBrowserAction(type, payload)
+      .then((result) => sendResponse({ ok: true, result }))
+      .catch((error) => sendResponse({
+        ok: false,
+        error: { message: error.message, code: error.code, retryable: Boolean(error.retryable) }
+      }));
+    return true;
+  }
+
+  // Chat/task actions
+  if (type.startsWith('chat.') || type.startsWith('task.')) {
+    const nativeType = type.startsWith('chat.') ? type.slice('chat.'.length) : type;
+    sendNative(nativeType, payload, options)
+      .then((result) => sendResponse({ ok: true, result }))
+      .catch((error) => sendResponse({
+        ok: false,
+        error: {
+          message: error.message,
+          code: error.code,
+          retryable: Boolean(error.retryable),
+          details: error.details
+        }
+      }));
+    return true;
+  }
+
+  return sendResponse({ ok: false, error: { message: `Unknown message type: ${type}` } });
+});
+
+// ====== RPC Handler ======
+async function handleRpc(type, payload, sender) {
+  const method = type.slice('rpc.'.length);
+  return bus.call(method, payload);
+}
+
+// ====== CDP Action Handler ======
+async function handleCdpAction(type, payload = {}, sender) {
+  const action = type.slice('cdp.'.length);
+  const tabId = payload.tabId || sender?.tab?.id;
+
+  switch (action) {
+    case 'attach':
+      return cdp.attach(tabId, payload);
+
+    case 'detach':
+      return cdp.detach(tabId);
+
+    case 'send':
+      return cdp.send(tabId, payload.method, payload.params, payload.options);
+
+    case 'navigate':
+      return cdp.navigate(tabId, payload.url);
+
+    case 'click':
+      return cdp.click(tabId, payload.x, payload.y, payload);
+
+    case 'type':
+      return cdp.type(tabId, payload.text);
+
+    case 'evaluate':
+      return { value: await cdp.evaluate(tabId, payload.expression, payload) };
+
+    case 'screenshot':
+      return cdp.screenshot(tabId, payload);
+
+    case 'html':
+      return { html: await cdp.getOuterHTML(tabId, payload) };
+
+    case 'console_logs':
+      return { logs: await cdp.getConsoleLogs(tabId, payload) };
+
+    case 'network_logs':
+      return { logs: await cdp.getNetworkLogs(tabId, payload) };
+
+    case 'wait_load':
+      return cdp.waitForLoad(tabId, payload);
+
+    case 'sessions':
+      return cdpSessionsInfo();
+
+    default:
+      throw new Error(`Unknown CDP action: ${action}`);
+  }
+}
+
+function cdpSessionsInfo() {
+  const active = cdp.getActiveSessions();
+  return {
+    sessions: Array.from(active.entries()).map(([tabId, session]) => ({
+      tabId,
+      refCount: session.refCount,
+      attachedAt: session.attachedAt,
+      enabledDomains: [...session.enabledDomains]
+    }))
+  };
+}
+
+// ====== Session Message Handler ======
+async function handleSessionMessage(type, payload = {}) {
+  const action = type.slice('session.'.length);
+  const { sessionId, tabId, turnId, origin } = payload;
+
+  switch (action) {
+    case 'create':
+      return sessions.createSession(sessionId, { turnId, origin });
+
+    case 'end':
+      return sessions.endSession(sessionId);
+
+    case 'claim':
+      return sessions.claimTab(sessionId, tabId, { turnId, origin });
+
+    case 'release':
+      return sessions.releaseTab(sessionId, tabId);
+
+    case 'handoff':
+      return sessions.handoffTab(sessionId, tabId, { turnId });
+
+    case 'resume':
+      return sessions.resumeHandoff(sessionId, tabId, { turnId });
+
+    case 'get':
+      return sessions.getSessionTabs(sessionId);
+
+    case 'lease':
+      return sessions.getTabLease(tabId);
+
+    case 'list':
+      return sessions.getActiveSessions();
+
+    default:
+      throw new Error(`Unknown session action: ${action}`);
+  }
+}
+
+// ====== Browser Action Handler ======
+async function handleBrowserAction(type, payload = {}) {
+  const { runBrowserAction } = await import('./browser-agent.js');
+  return runBrowserAction({ action: type, ...payload });
+}
+
+// ====== ChatGPT Message Handler ======
+async function handleChatGptMessage(type, payload, options, sender) {
+  if (type === 'chatgpt.blocks') {
+    return handleChatGptBlocks(payload, sender);
+  }
+
+  const tabId = sender.tab?.id;
+  if (!tabId) {
+    throw new Error('No sender tab for chatgpt message');
+  }
+
+  const strippedType = type.replace('chatgpt.', '');
+  try {
+    return await tabs.sendMessage(tabId, { type: strippedType, payload });
+  } catch {
+    const chatTabs = await tabs.query({ url: ['https://chatgpt.com/*', 'https://chat.openai.com/*'] });
+    if (!chatTabs.length) throw new Error('No ChatGPT tab found');
+    return await tabs.sendMessage(chatTabs[0].id, { type: strippedType, payload });
+  }
+}
+
+async function handleChatGptBlocks(payload, sender) {
+  const { text, sendResultBack } = payload || {};
+  if (!text || typeof text !== 'string') {
+    return { executed: false, reason: 'no text' };
+  }
+
+  const blocks = parseStructuredBlocks(text);
+  if (!blocks.length) {
+    return { executed: false, reason: 'no blocks found' };
+  }
+
+  const results = [];
+  for (const block of blocks) {
+    try {
+      let result;
+      if (block.type === 'tool_call') {
+        result = await sendNative('tool_call', block.payload);
+      } else if (block.type === 'payload_load') {
+        result = await sendNative('payload_load', block.payload);
+      } else if (block.type.startsWith('filesystem_')) {
+        result = await sendNative(block.type, block.payload);
+      } else if (block.type === 'agent_action') {
+        result = await sendNative('agent_action', block.payload);
+      } else if (block.type === 'task_result') {
+        result = await sendNative('task_result', block.payload);
+      } else if (block.type === 'task_event') {
+        result = await sendNative('task_event', block.payload);
+      } else {
+        result = { error: { message: `Unsupported block type: ${block.type}` } };
+      }
+      results.push({ blockId: block.blockId, ok: true, result });
+    } catch (error) {
+      results.push({
+        blockId: block.blockId,
+        ok: false,
+        error: {
+          message: error.message,
+          code: error.code,
+          retryable: Boolean(error.retryable),
+          details: error.details
+        }
+      });
+    }
+  }
+
+  if (sendResultBack) {
+    const fallbackTabId = sender.tab?.id || (await tabs.query({ url: ['https://chatgpt.com/*', 'https://chat.openai.com/*'] }))[0]?.id;
+    if (fallbackTabId) {
+      try {
+        await tabs.sendMessage(fallbackTabId, { type: 'chatgpt.blocks_result', payload: { results } });
+      } catch {
+        // content script may not be listening
+      }
+    }
+  }
+
+  return { executed: true, results, count: results.length };
+}
+
+// ====== Start ======
+initialize().catch(console.error);

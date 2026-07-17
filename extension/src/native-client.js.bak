@@ -1,0 +1,340 @@
+// native-client.js - Redirected to WebSocket JSON-RPC bridge (no Native Messaging)
+
+const WS_URL = "ws://127.0.0.1:9000/v1/extension";
+let socket = null;
+let reconnectTimer = null;
+let authorized = false;
+const pendingRequests = new Map();
+const statusListeners = new Set();
+
+// Emulate native host connection status
+let status = {
+  connected: false,
+  host: "ti-runtime-bridge",
+  protocol: "ti/1",
+  hostVersion: "1.0.0",
+  capabilities: [
+    "workspace.files",
+    "workspace.patch",
+    "terminal.process",
+    "git",
+    "artifacts",
+    "agent.tasks"
+  ],
+  activeProfile: "default",
+  mode: "local"
+};
+
+// Initialize connection automatically
+connectWs();
+setupPairingListener();
+
+function connectWs() {
+  console.log(`Connecting to Ti Agent Bridge at ${WS_URL}`);
+  socket = new WebSocket(WS_URL);
+
+  socket.onopen = () => {
+    console.log("WebSocket connected. Performing handshake...");
+    sendHandshake();
+  };
+
+  socket.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.method) {
+        handleIncomingRequest(data);
+      } else if (data.id !== undefined) {
+        const resolve = pendingRequests.get(data.id);
+        if (resolve) {
+          pendingRequests.delete(data.id);
+          resolve(data);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to parse websocket message:", err);
+    }
+  };
+
+  socket.onclose = () => {
+    console.warn("WebSocket disconnected. Retrying in 5s...");
+    cleanup();
+    scheduleReconnect();
+  };
+
+  socket.onerror = (err) => {
+    console.error("WebSocket error:", err);
+  };
+}
+
+function cleanup() {
+  socket = null;
+  authorized = false;
+  status.connected = false;
+  notifyStatus();
+  
+  for (const [id, resolve] of pendingRequests) {
+    resolve({ error: { code: -32099, message: "Connection closed" } });
+  }
+  pendingRequests.clear();
+}
+
+function scheduleReconnect() {
+  clearTimeout(reconnectTimer);
+  reconnectTimer = setTimeout(() => {
+    connectWs();
+  }, 5000);
+}
+
+function sendHandshake() {
+  chrome.storage.local.get(["tiSessionId"], (res) => {
+    if (!res.tiSessionId) {
+      console.log("Awaiting pairing. Pairing screen should be shown.");
+      return;
+    }
+
+    const msg = {
+      jsonrpc: "2.0",
+      method: "runtime.hello",
+      params: {
+        sessionId: res.tiSessionId
+      },
+      id: "handshake_1"
+    };
+
+    sendJsonRpc(msg).then((resp) => {
+      if (resp.result) {
+        authorized = true;
+        status.connected = true;
+        notifyStatus();
+        console.log("Handshake completed successfully.");
+      } else {
+        console.warn("Handshake failed, clearing session ID:", resp.error);
+        chrome.storage.local.remove(["tiSessionId"]);
+      }
+    });
+  });
+}
+
+function sendJsonRpc(msg) {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    return Promise.reject(new Error("WebSocket not connected"));
+  }
+  return new Promise((resolve) => {
+    pendingRequests.set(msg.id, resolve);
+    socket.send(JSON.stringify(msg));
+  });
+}
+
+// Emulate sendNative interface and map Codex contracts to Ti protocols
+export async function sendNative(type, payload = {}, options = {}) {
+  const reqId = `native_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+  
+  // Codex to Ti method mapping
+  let method = type;
+  if (type === "codexRuntime/hello") method = "runtime.hello";
+  else if (type === "codexRuntime/ensure") method = "runtime.ensure";
+  else if (type === "codexRuntime/restart") method = "runtime.restart";
+  else if (type === "codexRuntime/openLocalFile") method = "workspace.file.open";
+  else if (type === "codexRuntime/tabContextAsset/create") method = "asset.create";
+  else if (type === "codexRuntime/tabContextAsset/appendChunk") method = "asset.append";
+  else if (type === "codexRuntime/tabContextAsset/finish") method = "asset.commit";
+
+  const msg = {
+    jsonrpc: "2.0",
+    method: method,
+    params: payload,
+    id: reqId
+  };
+
+  try {
+    const resp = await sendJsonRpc(msg);
+    if (resp.error) {
+      throw new Error(resp.error.message);
+    }
+    return resp.result;
+  } catch (err) {
+    console.error(`Request ${type} failed:`, err);
+    throw err;
+  }
+}
+
+// Process incoming RPC commands from the CLI Bridge Server
+async function handleIncomingRequest(req) {
+  const { id, method, params = {} } = req;
+  let result = null;
+  let err = null;
+
+  try {
+    if (method === "browser.session.get") {
+      result = await getBrowserSession(params);
+    } else if (method === "browser.context.capture") {
+      result = await captureBrowserContext(params);
+    } else if (method === "browser.action.execute") {
+      result = await executeBrowserAction(params);
+    } else {
+      throw { code: -32601, message: `Method not found: ${method}` };
+    }
+  } catch (e) {
+    err = { code: e.code || -32000, message: e.message || String(e) };
+  }
+
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({
+      jsonrpc: "2.0",
+      id,
+      result,
+      error: err
+    }));
+  }
+}
+
+// Background handler for Pairing action from UI
+function setupPairingListener() {
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === "ws.pair") {
+      const code = message.payload.code;
+      const reqId = `pair_${Date.now()}`;
+
+      sendJsonRpc({
+        jsonrpc: "2.0",
+        method: "runtime.pair",
+        params: { code },
+        id: reqId
+      }).then((resp) => {
+        if (resp.result && resp.result.sessionId) {
+          chrome.storage.local.set({ tiSessionId: resp.result.sessionId }, () => {
+            authorized = true;
+            status.connected = true;
+            notifyStatus();
+            sendResponse({ ok: true });
+          });
+        } else {
+          sendResponse({ ok: false, error: resp.error || { message: "Pairing failed" } });
+        }
+      }).catch((err) => {
+        sendResponse({ ok: false, error: { message: err.message } });
+      });
+      return true;
+    }
+  });
+}
+
+// Browser API helper implementations
+async function getBrowserSession(params) {
+  const urlFilter = params.url || "";
+  let cookies = [];
+  try {
+    const query = urlFilter ? { url: urlFilter } : {};
+    cookies = await chrome.cookies.getAll(query);
+  } catch (e) {
+    console.warn(e);
+  }
+
+  let localStorageData = {};
+  let sessionStorageData = {};
+  try {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab && tab.id && !tab.url.startsWith("chrome://")) {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => ({ localStorage: { ...localStorage }, sessionStorage: { ...sessionStorage } })
+      });
+      if (results && results[0]?.result) {
+        localStorageData = results[0].result.localStorage;
+        sessionStorageData = results[0].result.sessionStorage;
+      }
+    }
+  } catch (e) {
+    console.warn(e);
+  }
+
+  return {
+    cookies: cookies.map(c => ({ name: c.name, value: c.value, domain: c.domain })),
+    localStorage: localStorageData,
+    sessionStorage: sessionStorageData
+  };
+}
+
+async function captureBrowserContext(params) {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) throw new Error("No active tab");
+
+  let screenshot = "";
+  if (params.screenshot !== false) {
+    try {
+      screenshot = await chrome.tabs.captureVisibleTab(null, { format: "jpeg", quality: 85 });
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
+  let domTree = "";
+  try {
+    if (tab.id && !tab.url.startsWith("chrome://")) {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => document.documentElement.outerHTML
+      });
+      domTree = results[0]?.result || "";
+    }
+  } catch (e) {
+    console.warn(e);
+  }
+
+  return { title: tab.title, url: tab.url, screenshot, domTree };
+}
+
+async function executeBrowserAction(params) {
+  const { action, selector, text } = params;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) throw new Error("No active tab");
+
+  const results = await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    args: [action, selector, text || ""],
+    func: (action, selector, text) => {
+      const element = document.querySelector(selector);
+      if (!element) return { success: false, error: `Element not found: ${selector}` };
+      if (action === "click") {
+        element.click();
+        return { success: true };
+      } else if (action === "type") {
+        element.value = text;
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        element.dispatchEvent(new Event('change', { bubbles: true }));
+        return { success: true };
+      }
+      return { success: false, error: `Unsupported action: ${action}` };
+    }
+  });
+
+  return results[0]?.result || { success: false, error: "Action failed" };
+}
+
+// Emulate status APIs for the extension UI
+export function getNativeStatus() {
+  return status;
+}
+
+export function onNativeStatus(listener) {
+  statusListeners.add(listener);
+  return () => statusListeners.delete(listener);
+}
+
+function notifyStatus() {
+  for (const listener of statusListeners) {
+    try { listener(status); } catch (e) {}
+  }
+}
+
+// Emulated heartbeats
+export async function startHeartbeat() {}
+export async function stopHeartbeat() {}
+export async function checkHeartbeat() { return true; }
+export async function connectNative\(\) \{ return status; \}\n\nexport function startReconnectAlarm\(\) \{ scheduleReconnect\(\); \}\n\nexport function stopReconnectAlarm\(\) \{ clearTimeout\(reconnectTimer\); \}
+
+
+
+export function startReconnectAlarm() { scheduleReconnect(); }
+export function stopReconnectAlarm() { clearTimeout(reconnectTimer); }
+

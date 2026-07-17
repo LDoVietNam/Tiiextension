@@ -1,0 +1,305 @@
+import { spawn } from "node:child_process";
+import path from "node:path";
+import fs from "node:fs";
+import os from "node:os";
+
+const ROOT = process.cwd();
+const RUNTIME_DIR = path.join(ROOT, "runtime");
+const STATE_FILE = path.join(RUNTIME_DIR, "orchestrator-state.json");
+
+export async function orchestratorUp(options = {}) {
+  const { tunnel = false, mcp = false, host = "127.0.0.1", port = 18401 } = options;
+  
+  // Ensure runtime directory
+  if (!fs.existsSync(RUNTIME_DIR)) {
+    fs.mkdirSync(RUNTIME_DIR, { recursive: true });
+  }
+
+  // 1. Check Node.js
+  console.log(`[${timestamp()}] Checking Node.js...`);
+  const nodeVersion = process.version.replace("v", "");
+  const majorVersion = parseInt(nodeVersion.split(".")[0], 10);
+  if (majorVersion < 18) {
+    throw cliError("Node.js 18+ is required");
+  }
+  console.log(`[${timestamp()}] Node.js ${nodeVersion} found.`);
+
+  // 2. Check config workspace
+  console.log(`[${timestamp()}] Checking workspace config...`);
+  const configPath = path.resolve(ROOT, "native-host/config/default.workspaces.json");
+  if (!fs.existsSync(configPath)) {
+    throw cliError(`Config not found: ${configPath}`);
+  }
+  const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  console.log(`[${timestamp()}] Workspace: ${config.active_profile || "default"}`);
+
+  // 3. Create/read local API token
+  console.log(`[${timestamp()}] Checking local API token...`);
+  const tokenFile = path.join(ROOT, "native-host/config/secrets/local-api.token");
+  let token;
+  if (!fs.existsSync(tokenFile)) {
+    const tokenDir = path.dirname(tokenFile);
+    if (!fs.existsSync(tokenDir)) fs.mkdirSync(tokenDir, { recursive: true });
+    token = generateToken();
+    fs.writeFileSync(tokenFile, token);
+    console.log(`[${timestamp()}] Generated new API token.`);
+  } else {
+    token = fs.readFileSync(tokenFile, "utf8").trim();
+    console.log(`[${timestamp()}] Found existing API token.`);
+  }
+  process.env.TIIEXTENSION_API_TOKEN = token;
+
+  // 4. Start local API
+  console.log(`[${timestamp()}] Starting local API on http://${host}:${port}...`);
+  const serverPath = path.join(ROOT, "native-host/bin/agent-server.js");
+  if (!fs.existsSync(serverPath)) {
+    throw cliError(`agent-server.js not found: ${serverPath}`);
+  }
+
+  const apiProcess = spawn("node", [serverPath, "--config", configPath, "--host", host, "--port", String(port)], {
+    cwd: ROOT,
+    detached: false,
+    stdio: ["ignore", fs.openSync(path.join(RUNTIME_DIR, "api.log"), "a"), fs.openSync(path.join(RUNTIME_DIR, "api-error.log"), "a")]
+  });
+  saveState("api_pid", apiProcess.pid);
+  console.log(`[${timestamp()}] API started (PID: ${apiProcess.pid})`);
+
+  // Wait for API to be ready
+  await waitForApi(`http://${host}:${port}`, token);
+
+  // 5. Start MCP bridge if enabled
+  let mcpStatus = "skipped, --mcp not specified";
+  if (mcp) {
+    console.log(`[${timestamp()}] Starting MCP bridge...`);
+    const mcpPath = path.join(ROOT, "mcp-bridge/src/server.js");
+    if (!fs.existsSync(mcpPath)) {
+      throw cliError(`MCP bridge not found: ${mcpPath}`);
+    }
+    const mcpProcess = spawn("node", [mcpPath], {
+      cwd: ROOT,
+      detached: false,
+      stdio: ["ignore", fs.openSync(path.join(RUNTIME_DIR, "mcp.log"), "a"), fs.openSync(path.join(RUNTIME_DIR, "mcp-error.log"), "a")]
+    });
+    saveState("mcp_pid", mcpProcess.pid);
+    mcpStatus = `running (PID: ${mcpProcess.pid}, stdio mode)`;
+    console.log(`[${timestamp()}] MCP bridge started (PID: ${mcpProcess.pid})`);
+  }
+
+  // 6. Start Cloudflare Tunnel if token available
+  let tunnelStatus = "skipped, --tunnel not specified";
+  let tunnelUrl = null;
+  
+  if (tunnel) {
+    const tunnelToken = await getTunnelToken();
+    if (tunnelToken) {
+      console.log(`[${timestamp()}] Starting Cloudflare tunnel...`);
+      const tunnelProcess = spawn("cloudflared", ["tunnel", "--url", `http://${host}:${port}`], {
+        cwd: ROOT,
+        detached: false,
+        stdio: ["ignore", fs.openSync(path.join(RUNTIME_DIR, "tunnel.log"), "a"), fs.openSync(path.join(RUNTIME_DIR, "tunnel-error.log"), "a")]
+      });
+      saveState("tunnel_pid", tunnelProcess.pid);
+      tunnelStatus = `starting (PID: ${tunnelProcess.pid})`;
+      console.log(`[${timestamp()}] Tunnel started (PID: ${tunnelProcess.pid})`);
+      
+      // Extract URL from log
+      tunnelUrl = await extractTunnelUrl(RUNTIME_DIR);
+      if (tunnelUrl) {
+        console.log(`[${timestamp()}] Tunnel URL: ${tunnelUrl}`);
+      }
+    } else {
+      tunnelStatus = "skipped, CLOUDFLARE_TUNNEL_TOKEN missing";
+    }
+  }
+
+  // 7. Print status summary
+  console.log("");
+  console.log("========================================");
+  console.log("  Tiiextension Orchestrator Status");
+  console.log("========================================");
+  console.log(`API:      running at http://${host}:${port}`);
+  console.log(`MCP:      ${mcpStatus}`);
+  console.log(`Tunnel:   ${tunnelStatus}`);
+  if (tunnelUrl) console.log(`URL:      ${tunnelUrl}`);
+  console.log("========================================");
+  console.log("");
+
+  // 9. Write orchestrator log
+  appendLog(path.join(RUNTIME_DIR, "orchestrator.log"), { api_pid: apiProcess.pid, mcp_pid: getState().mcp_pid, tunnel_pid: getState().tunnel_pid });
+
+  console.log(`[${timestamp()}] Orchestrator started successfully.`);
+  console.log(`[${timestamp()}] Use 'node native-host/bin/agent-cli.js down' to stop all services.`);
+
+  return { ok: true, api_pid: apiProcess.pid, mcp_status: mcpStatus, tunnel_status: tunnelStatus };
+}
+
+export async function orchestratorDown() {
+  console.log(`[${timestamp()}] Stopping Tiiextension services...`);
+  
+  const state = getState();
+  const stopped = [];
+
+  // Stop in reverse order
+  if (state.tunnel_pid) {
+    try {
+      process.kill(state.tunnel_pid, "SIGTERM");
+      stopped.push("tunnel");
+      console.log(`[${timestamp()}] Tunnel stopped (PID: ${state.tunnel_pid})`);
+    } catch (e) { console.error(`Failed to stop tunnel: ${e.message}`); }
+  }
+
+  if (state.mcp_pid) {
+    try {
+      process.kill(state.mcp_pid, "SIGTERM");
+      stopped.push("mcp");
+      console.log(`[${timestamp()}] MCP bridge stopped (PID: ${state.mcp_pid})`);
+    } catch (e) { console.error(`Failed to stop MCP: ${e.message}`); }
+  }
+
+  if (state.api_pid) {
+    try {
+      process.kill(state.api_pid, "SIGTERM");
+      stopped.push("api");
+      console.log(`[${timestamp()}] API stopped (PID: ${state.api_pid})`);
+    } catch (e) { console.error(`Failed to stop API: ${e.message}`); }
+  }
+
+  // Clean up state
+  if (fs.existsSync(STATE_FILE)) {
+    fs.unlinkSync(STATE_FILE);
+    console.log(`[${timestamp()}] Orchestrator state cleared.`);
+  }
+
+  console.log("");
+  console.log("========================================");
+  console.log(`  Services stopped: ${stopped.join(", ")}`);
+  console.log("========================================");
+
+  return { ok: true, stopped };
+}
+
+export async function orchestratorStatus() {
+  const state = getState();
+  
+  const status = {
+    api: state.api_pid ? { running: isProcessRunning(state.api_pid), pid: state.api_pid } : { running: false },
+    mcp: state.mcp_pid ? { running: isProcessRunning(state.mcp_pid), pid: state.mcp_pid } : { running: false },
+    tunnel: state.tunnel_pid ? { running: isProcessRunning(state.tunnel_pid), pid: state.tunnel_pid } : { running: false }
+  };
+
+  console.log("");
+  console.log("========================================");
+  console.log("  Tiiextension Orchestrator Status");
+  console.log("========================================");
+  for (const [name, info] of Object.entries(status)) {
+    const statusText = info.running ? `running (PID: ${info.pid})` : "stopped";
+    console.log(`${name.toUpperCase()}: ${statusText}`);
+  }
+  console.log("========================================");
+  console.log("");
+
+  return { ok: true, ...status };
+}
+
+function takeOption(argv, name) {
+  const index = argv.indexOf(name);
+  if (index < 0) return null;
+  if (index + 1 >= argv.length) throw cliError(`${name} requires a value`);
+  const [, value] = argv.splice(index, 2);
+  return value;
+}
+
+function takeFlag(argv, name) {
+  const index = argv.indexOf(name);
+  if (index < 0) return false;
+  argv.splice(index, 1);
+  return true;
+}
+
+function saveState(key, value) {
+  const state = getState();
+  state[key] = value;
+  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+}
+
+function getState() {
+  if (fs.existsSync(STATE_FILE)) {
+    return JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
+  }
+  return {};
+}
+
+function isProcessRunning(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function generateToken() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let token = "";
+  for (let i = 0; i < 32; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return token;
+}
+
+async function waitForApi(url, token, maxRetries = 30) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const res = await fetch(`${url}/health`, { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) return;
+    } catch {
+      await new Promise(r => setTimeout(r, 1000));
+    }
+  }
+}
+
+async function getTunnelToken() {
+  // Check Z:\00_SECRET first
+  const secretFile = "Z:/00_SECRET/cloudflare-api-key.txt";
+  try {
+    const content = fs.readFileSync(secretFile, "utf8");
+    const match = content.match(/CLOUDFLARE_TUNNEL_TOKEN=(.+)/);
+    if (match) return match[1].trim();
+  } catch {}
+
+  // Check local .env
+  const envFile = path.join(ROOT, "cloudflare/.env");
+  try {
+    const content = fs.readFileSync(envFile, "utf8");
+    const match = content.match(/CLOUDFLARE_TUNNEL_TOKEN=(.+)/);
+    if (match) return match[1].trim();
+  } catch {}
+
+  return null;
+}
+
+async function extractTunnelUrl(runtimeDir) {
+  const logPath = path.join(runtimeDir, "tunnel.log");
+  if (!fs.existsSync(logPath)) return null;
+  
+  await new Promise(r => setTimeout(r, 3000));
+  const content = fs.readFileSync(logPath, "utf8");
+  const match = content.match(/https:\/\/[a-z0-9\-]+\.trycloudflare\.com/);
+  return match ? match[0] : null;
+}
+
+function appendLog(logPath, data) {
+  if (!fs.existsSync(logPath)) return;
+  const line = `${new Date().toISOString()} ${JSON.stringify(data)}\n`;
+  fs.appendFileSync(logPath, line);
+}
+
+function timestamp() {
+  return new Date().toISOString().replace("T", " ").slice(0, 19);
+}
+
+function cliError(message) {
+  const error = new Error(message);
+  error.code = "CLI_USAGE_ERROR";
+  return error;
+}

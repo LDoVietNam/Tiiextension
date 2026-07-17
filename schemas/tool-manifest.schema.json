@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.chatgpt-native-agent/tool-manifest.schema.json",
+  "title": "ChatGPT Native Agent Tool Manifest",
+  "type": "object",
+  "required": ["name", "version", "description", "input_schema", "output_schema", "capability", "risk", "mutates"],
+  "properties": {
+    "name": { "type": "string", "pattern": "^[a-z][a-z0-9_.-]+$" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+    "description": { "type": "string", "minLength": 1 },
+    "input_schema": { "type": "object" },
+    "output_schema": { "type": "object" },
+    "capability": { "type": "string", "minLength": 1 },
+    "risk": { "enum": ["inspect", "read", "write", "execute", "browser_control", "administrative"] },
+    "mutates": { "type": "boolean" },
+    "transactional": { "type": "boolean" },
+    "default_timeout_ms": { "type": "integer", "minimum": 1 },
+    "max_output_bytes": { "type": "integer", "minimum": 1 },
+    "supports_cancellation": { "type": "boolean" },
+    "supports_progress": { "type": "boolean" }
+  },
+  "additionalProperties": false
+}

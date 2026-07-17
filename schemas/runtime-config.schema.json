@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.chatgpt-native-agent/runtime-config.schema.json",
+  "title": "ChatGPT Native Agent Runtime Config v2",
+  "type": "object",
+  "required": ["schema", "mode", "profiles"],
+  "properties": {
+    "schema": { "const": "cnagent-config/2" },
+    "mode": { "enum": ["dev", "release"] },
+    "active_profile": { "type": "string", "minLength": 1 },
+    "profiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "roots"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "roots": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["path"],
+              "properties": {
+                "id": { "type": "string" },
+                "path": { "type": "string", "minLength": 1 },
+                "read_only": { "type": "boolean" }
+              },
+              "additionalProperties": false
+            }
+          },
+          "payload_roots": { "type": "array", "items": { "type": "string" } },
+          "capabilities": { "type": "array", "items": { "type": "string" } },
+          "process": { "type": "object" },
+          "filesystem": { "type": "object" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "provider": { "type": "object" },
+    "native_hosts": { "type": "object" },
+    "api": { "type": "object" },
+    "audit": { "type": "object" }
+  },
+  "additionalProperties": true
+}

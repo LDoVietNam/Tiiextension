@@ -1,0 +1,116 @@
+{
+  "schema": "ti-workspace/1",
+  "version": "1.0.0",
+  "lastUpdated": "2026-07-16T03:30:00+07:00",
+  "workspaces": [
+    {
+      "id": "tiiextension",
+      "name": "Tiiextension",
+      "root": "Z:\\01_PROJECTS\\apps\\Tiiextension",
+      "description": "Browser extension with native runtime",
+      "permissions": ["read", "search", "patch", "test", "build"],
+      "languages": ["JavaScript", "TypeScript"],
+      "entrypoints": [
+        "extension/src/background.js",
+        "extension/src/chatgpt-content.js",
+        "native-host/bin/agent-cli.js"
+      ],
+      "packageManager": "npm"
+    },
+    {
+      "id": "tirouter",
+      "name": "TiRouter",
+      "root": "Z:\\01_PROJECTS\\apps\\Tirouter",
+      "description": "Router gateway for Ti ecosystem",
+      "permissions": ["read", "search"],
+      "languages": ["Go", "TypeScript", "JavaScript"],
+      "entrypoints": [
+        "src/server/router.go",
+        "src/router/index.ts"
+      ],
+      "packageManager": "go"
+    },
+    {
+      "id": "tibrain",
+      "name": "TiBrain",
+      "root": "Z:\\01_PROJECTS\\apps\\tibrain",
+      "description": "Knowledge service and memory",
+      "permissions": ["read", "search"],
+      "languages": ["Go"],
+      "entrypoints": [
+        "cmd/server/main.go",
+        "internal/server/server.go"
+      ],
+      "packageManager": "go"
+    },
+    {
+      "id": "ti-cli",
+      "name": "Ti CLI",
+      "root": "Z:\\01_PROJECTS\\apps\\Ti-CLI",
+      "description": "Ti ecosystem CLI tool",
+      "permissions": ["read", "search", "build"],
+      "languages": ["Go"],
+      "packageManager": "go"
+    },
+    {
+      "id": "extension",
+      "name": "1MCP Extension",
+      "root": "Z:\\01_PROJECTS\\apps\\extension",
+      "description": "1MCP browser extension reference",
+      "permissions": ["read", "search"],
+      "languages": ["JavaScript", "TypeScript"],
+      "entrypoints": [
+        "extension/src/background.js"
+      ],
+      "packageManager": "npm"
+    }
+  ],
+  "services": {
+    "tirouter": {
+      "url": "http://127.0.0.1:1870",
+      "description": "TiRouter Gateway - authentication, routing, policy",
+      "capabilities": ["routing", "auth", "policy", "provider-registry"],
+      "healthEndpoint": "/health"
+    },
+    "tibrain": {
+      "url": "http://127.0.0.1:1810",
+      "description": "TiBrain - knowledge, memory, planning",
+      "capabilities": ["rag", "memory", "skills", "planning", "tool-discovery"],
+      "healthEndpoint": "/api/health"
+    },
+    "contextBridge": {
+      "url": "http://127.0.0.1:3333",
+      "description": "Local Context Bridge - filesystem, git, execution",
+      "capabilities": ["filesystem", "git", "exec", "snapshot"],
+      "healthEndpoint": "/health"
+    },
+    "mcpBridge": {
+      "url": "http://127.0.0.1:18402",
+      "description": "MCP Bridge - protocol translation",
+      "capabilities": ["mcp-bridge"],
+      "healthEndpoint": "/health"
+    }
+  },
+  "toolPolicies": {
+    "default": {
+      "allowedTools": ["fs.read", "fs.list", "git.status"],
+      "maxConcurrency": 1,
+      "timeoutMs": 30000
+    },
+    "development": {
+      "allowedTools": ["fs.read", "fs.list", "fs.patch", "git.status", "git.diff", "test.run", "build.run"],
+      "maxConcurrency": 2,
+      "timeoutMs": 120000
+    }
+  },
+  "crossProjectAccess": {
+    "tiiextension": {
+      "canAccess": ["tirouter", "tibrain"],
+      "accessMode": "read-only"
+    },
+    "tirouter": {
+      "canAccess": ["tiiextension", "tibrain"],
+      "accessMode": "read-only"
+    }
+  }
+}

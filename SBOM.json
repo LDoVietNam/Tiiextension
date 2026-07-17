@@ -1,0 +1,19 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "component": {
+      "type": "application",
+      "name": "Tiiextension",
+      "version": "1.1.0"
+    }
+  },
+  "components": [],
+  "properties": [
+    {
+      "name": "cnagent.runtime",
+      "value": "Node.js 18+ built-ins only"
+    }
+  ]
+}

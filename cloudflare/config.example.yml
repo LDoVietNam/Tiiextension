@@ -1,0 +1,7 @@
+tunnel: ${CLOUDFLARE_TUNNEL_NAME}
+credentials-file: ${CLOUDFLARE_TUNNEL_CREDENTIALS_FILE}
+
+ingress:
+  - hostname: ${CLOUDFLARE_TUNNEL_HOSTNAME}
+    service: http://127.0.0.1:18401
+  - service: http_status:404

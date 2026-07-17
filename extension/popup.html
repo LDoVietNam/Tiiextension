@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tiiextension</title>
+    <link rel="stylesheet" href="src/popup.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>🧩 Tiiextension <span class="version">v1.3</span></h1>
+          <p id="status">Kiểm tra kết nối…</p>
+        </div>
+        <button id="refresh-status" title="Làm mới">↻</button>
+      </header>
+
+      <!-- Hệ thống Status Dashboard -->
+      <section class="dashboard">
+        <div class="dashboard-grid">
+          <div class="dash-card" id="dash-backend">
+            <div class="dash-icon">🔌</div>
+            <div class="dash-label">Backend</div>
+            <div class="dash-value" id="backend-status">Đang kiểm tra…</div>
+          </div>
+          <div class="dash-card" id="dash-model">
+            <div class="dash-icon">🧠</div>
+            <div class="dash-label">Model</div>
+            <div class="dash-value" id="model-status">Đang kiểm tra…</div>
+          </div>
+          <div class="dash-card" id="dash-cookie">
+            <div class="dash-icon">🍪</div>
+            <div class="dash-label">Cookie ChatGPT</div>
+            <div class="dash-value" id="cookie-status-text">Đang kiểm tra…</div>
+          </div>
+          <div class="dash-card" id="dash-native">
+            <div class="dash-icon">⚡</div>
+            <div class="dash-label">Native Host</div>
+            <div class="dash-value" id="native-status-text">Đang kiểm tra…</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Provider & Model Config -->
+      <section class="provider-config">
+        <div class="row split">
+          <select id="provider-select" disabled>
+            <option value="auto">🤖 Auto (Agent chọn)</option>
+            <option value="tirouter">🚀 Tirouter Gateway (Local)</option>
+            <option value="therouter">🖥️ TheRouter (Local)</option>
+            <option value="omniroute">☁️ OmniRoute (Cloud)</option>
+            <option value="kira">✨ Kira (Free)</option>
+            <option value="therouterai">🌐 TheRouter AI</option>
+            <option value="chatgpt-web">💬 ChatGPT Web</option>
+          </select>
+          <select id="model-select" disabled>
+            <option value="auto">🎯 Auto-select</option>
+            <option value="gpt-5.4">GPT-5.4</option>
+            <option value="gpt-5.5">GPT-5.5</option>
+            <option value="gpt-4o">GPT-4o</option>
+            <option value="gpt-4.1">GPT-4.1</option>
+            <option value="claude">Claude</option>
+            <option value="gemini">Gemini</option>
+            <option value="grok">Grok</option>
+            <option value="deepseek">DeepSeek</option>
+            <option value="kira-mini-1.0">Kira Mini</option>
+          </select>
+        </div>
+        <div class="auto-mode-hint">
+          🤖 Agent tự động chọn model theo task. <button id="toggle-manual" class="link-btn">Chuyển thủ công</button>
+        </div>
+      </section>
+
+      <!-- Provider Health Check -->
+      <section class="health-section">
+        <div class="section-title">🩺 Trạng thái Gateway</div>
+        <div id="gateway-health" class="health-list">
+          <div class="health-item pending">Đang kiểm tra gateway…</div>
+        </div>
+      </section>
+
+      <!-- Model Fallback Chain -->
+      <section class="fallback-section">
+        <div class="section-title">🔗 Fallback Chain</div>
+        <div id="fallback-chain" class="fallback-list">
+          <div class="fallback-item">Chưa có dữ liệu</div>
+        </div>
+      </section>
+
+      <!-- Cookie Section -->
+      <section class="cookie-section">
+        <div class="row">
+          <div class="cookie-status" id="cookie-status">
+            <span class="cookie-label">🍪 Cookie Model:</span>
+            <span class="cookie-value" id="cookie-value">Đang kiểm tra…</span>
+          </div>
+        </div>
+      </section>
+
+      <nav class="switch" aria-label="Chế độ">
+        <button id="ui-mode" data-mode="ui" class="active">💬 Chat</button>
+        <button id="api-mode" data-mode="api">🔧 Tools</button>
+        <button id="tokens-btn" data-mode="tokens">🔑 Token</button>
+      </nav>
+
+      <!-- Execution Mode Section -->
+      <section class="execution-section">
+        <div class="section-title">⚙️ Execution Mode</div>
+        <div class="row">
+          <label><input type="checkbox" id="execution-enabled"> Bật thực thi tool</label>
+          <label><input type="checkbox" id="auto-inject-results" checked> Tự động inject kết quả</label>
+        </div>
+        <div id="execution-status" style="font-size:11px;color:#94a3b8;margin-top:4px;">⏳ Đang kiểm tra...</div>
+        <div id="context-bridge-status" style="font-size:11px;color:#94a3b8;margin-top:4px;"></div>
+      </section>
+
+      <!-- Chat Section -->
+      <section class="chat">
+        <div id="messages" class="messages"></div>
+        <textarea id="chat-input" rows="3" placeholder="Nhập tin nhắn... (Enter để gửi)"></textarea>
+        <div class="row">
+          <button id="send-chat" class="primary">Gửi</button>
+          <button id="open-panel">📂 Mở Side Panel</button>
+        </div>
+      </section>
+
+      <!-- API Panel -->
+      <section id="api-panel" class="api-panel" hidden>
+        <div class="row split">
+          <label>
+            ⚡ Tự động chạy blocks
+            <input id="auto-execute" type="checkbox" checked>
+          </label>
+          <button id="copy-raw">📋 Copy raw</button>
+        </div>
+        <label for="api-kind">Loại</label>
+        <select id="api-kind">
+          <option value="blocks">Structured blocks</option>
+          <option value="native">Native tool</option>
+        </select>
+        <label for="tool-preset">Preset</label>
+        <select id="tool-preset">
+          <option value="">Chọn preset…</option>
+          <option value="workspace">📁 Workspace info</option>
+          <option value="tree">🌳 Tree</option>
+          <option value="search">🔍 Search text</option>
+          <option value="glob">🔎 Search glob</option>
+          <option value="read_many">📖 Read many</option>
+          <option value="transaction">📝 Begin transaction</option>
+          <option value="snapshot">📸 Snapshot</option>
+          <option value="snapshots">📋 List snapshots</option>
+          <option value="project">📦 Project summary</option>
+          <option value="scripts">⚙️ Project scripts</option>
+        </select>
+        <textarea id="api-input" rows="5">{
+  "tool_call": {
+    "tool": "fs.list",
+    "args": {
+      "path": "."
+    }
+  }
+}</textarea>
+        <button id="api-run" class="primary">▶ Chạy</button>
+        <pre id="api-output"></pre>
+      </section>
+
+      <!-- Tokens Panel -->
+      <section id="tokens-panel" class="tokens-panel" hidden>
+        <h2>🔑 Token đã lưu</h2>
+        <div class="row split">
+          <input id="token-service" placeholder="Tên service (vd: openai)">
+          <button id="save-token">💾 Lưu</button>
+        </div>
+        <input id="token-value" type="password" placeholder="Giá trị token">
+        <div id="tokens-list" class="tokens-list"></div>
+      </section>
+    </main>
+    <script type="module" src="./src/popup.js"></script>
+  </body>
+</html>

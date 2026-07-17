@@ -1,0 +1,9 @@
+{
+  "name": "com.chatgpt_native_agent.host",
+  "description": "Tiiextension Native Agent Host",
+  "path": "bin/chatgpt-native-agent-host.cmd",
+  "type": "stdio",
+  "allowed_origins": [
+    "chrome-extension://ojjbdgfmnedbnpadfnmgkolfmhipkefi/"
+  ]
+}

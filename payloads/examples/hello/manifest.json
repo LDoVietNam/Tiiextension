@@ -1,0 +1,13 @@
+{
+  "schema": "cnagent-payload/1",
+  "name": "hello.payload",
+  "version": "1.0.0",
+  "type": "module",
+  "entry": "./index.js",
+  "capabilities": [],
+  "methods": {
+    "run": {
+      "timeout_ms": 30000
+    }
+  }
+}

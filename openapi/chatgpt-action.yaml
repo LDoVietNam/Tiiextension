@@ -1,0 +1,106 @@
+openapi: 3.1.0
+info:
+  title: Tiiextension GPT Control API
+  version: 1.3.0
+  description: Control Tiiextension native runtime through a Cloudflare Tunnel.
+servers:
+  - url: https://YOUR-CLOUDFLARE-TUNNEL.trycloudflare.com
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    ToolCall:
+      type: object
+      required: [tool]
+      properties:
+        tool:
+          type: string
+        args:
+          type: object
+          additionalProperties: true
+        task_id:
+          type: string
+        call_id:
+          type: string
+        idempotency_key:
+          type: string
+    AgentGoal:
+      type: object
+      required: [goal]
+      properties:
+        goal:
+          type: string
+        workspace_id:
+          type: string
+        mode:
+          type: string
+          enum: [plan_then_execute, inspect_only, execute]
+        constraints:
+          type: object
+          additionalProperties: true
+paths:
+  /v1/health:
+    get:
+      operationId: tiiextensionHealth
+      responses:
+        "200":
+          description: Runtime handshake.
+  /v1/tools:
+    get:
+      operationId: tiiextensionTools
+      responses:
+        "200":
+          description: Tool manifest.
+  /v1/workspaces:
+    get:
+      operationId: tiiextensionWorkspaces
+      responses:
+        "200":
+          description: Active workspaces.
+  /v1/tools/call:
+    post:
+      operationId: tiiextensionToolCall
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ToolCall"
+      responses:
+        "200":
+          description: Tool result.
+  /v1/agent/goal:
+    post:
+      operationId: tiiextensionAgentGoal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentGoal"
+      responses:
+        "202":
+          description: Queued goal task.
+  /v1/events:
+    get:
+      operationId: tiiextensionEvents
+      parameters:
+        - name: token
+          in: query
+          schema:
+            type: string
+        - name: task_id
+          in: query
+          schema:
+            type: string
+        - name: after_cursor
+          in: query
+          schema:
+            type: integer
+      responses:
+        "101":
+          description: WebSocket event stream.

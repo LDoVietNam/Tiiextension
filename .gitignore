@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+.pnpm-store/
+# build / artifacts
+dist/
+build/
+out/
+.release/
+dashboard/assets/
+.kilo/
+data/
+test-results/
+# copied external (not part of extension source)
+Tirouter/
+# env / secrets
+.env
+.env.*
+!.env.example
+# logs
+*.log
+logs/
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,79 @@
+{
+  "port": 1840,
+  "host": "127.0.0.1",
+  "allowed_roots": [
+    "Z:/",
+    "C:/",
+    "Z:/01_PROJECTS",
+    "Z:/00_SECRET",
+    "C:/Users"
+  ],
+  "providers": [
+    {"id": "orcarouter", "name": "OrcaRouter", "base_url": "http://127.0.0.1:1840/v1"},
+    {"id": "iflow", "name": "iFlow", "base_url": "https://apis.iflow.cn/v1"},
+    {"id": "groq", "name": "Groq", "base_url": "https://api.groq.com/openai/v1"},
+    {"id": "openrouter", "name": "OpenRouter", "base_url": "https://openrouter.ai/api/v1"},
+    {"id": "deepseek", "name": "DeepSeek", "base_url": "https://api.deepseek.com/v1"},
+    {"id": "kira", "name": "Kira AI", "base_url": "https://kiraai.vn/api/v1"},
+    {"id": "dahl", "name": "Dahl", "base_url": "https://inference.dahl.global/v1"},
+    {"id": "dashllm7", "name": "DashLLM7", "base_url": "https://dash.llm7.io/v1"}
+  ],
+  "models": {
+    "groq": [
+      "llama-3.1-70b-versatile",
+      "llama-3.1-8b-instant",
+      "llama-4-scout",
+      "llama-4-maverick",
+      "mixtral-8x7b-32768",
+      "gemma2-9b-it"
+    ],
+    "deepseek": [
+      "deepseek-v4-flash",
+      "deepseek-v4-pro",
+      "deepseek-coder",
+      "deepseek-chat"
+    ],
+    "openrouter": [
+      "openai/gpt-4o",
+      "openai/gpt-4o-mini",
+      "anthropic/claude-3-5-sonnet",
+      "anthropic/claude-3-opus",
+      "google/gemini-2.0-flash",
+      "google/gemini-2.5-flash",
+      "meta/llama-3.1-70b"
+    ],
+    "iflow": [
+      "qwen3-coder-plus",
+      "qwen3-max",
+      "qwen3-235b",
+      "deepseek-v3.2",
+      "deepseek-r1",
+      "glm-4.7"
+    ],
+    "kira": [
+      "kira-mini-1.0"
+    ],
+    "dahl": [
+      "moonshotai/Kimi-K2.6"
+    ],
+    "orcarouter": [
+      "gpt-4-turbo-local",
+      "gpt-5.4",
+      "gpt-5.5"
+    ]
+  },
+  "auto_select": {
+    "priority_order": ["cookie", "codex_pool", "free_providers", "paid_providers", "fallback"],
+    "codex_pool_dir": "Z:/01_PROJECTS/apps/Tiiextension/chatgpt2apiEditV141/codex_pool",
+    "free_providers": ["groq", "kira", "openrouter", "iflow"],
+    "paid_providers": ["deepseek", "together", "anthropic"],
+    "fallback_chain": ["gpt-5.4", "gpt-4o", "gpt-4.1"],
+    "task_keywords": {
+      "trivial": ["translate", "format", "fix typo", "dịch", "định dạng"],
+      "simple": ["summarize", "explain", "viết", "tóm tắt", "giải thích"],
+      "moderate": ["implement", "debug", "refactor", "triển khai", "sửa lỗi"],
+      "complex": ["architect", "optimize system", "hệ thống", "tối ưu"],
+      "code": ["function", "class", "api", "typescript", "python"]
+    }
+  }
+}

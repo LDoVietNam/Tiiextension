@@ -1,0 +1,65 @@
+{
+  "version": "1.0.0",
+  "description": "Robust selector map for ChatGPT Web DOM - auto-heal on mutation",
+  "selectors": {
+    "chatContainer": {
+      "primary": "[class*='react-scroll-to-bottom']",
+      "fallbacks": [
+        "#__next",
+        ".flex.flex-col.items-center",
+        "main[role='main']"
+      ]
+    },
+    "userMessage": {
+      "primary": "[data-message-author-role='user']",
+      "fallbacks": [
+        ".grid.md\\:grid-cols-2 > div:first-child",
+        "[class*='user-message']"
+      ]
+    },
+    "assistantMessage": {
+      "primary": "[data-message-author-role='assistant']",
+      "fallbacks": [
+        ".grid.md\\:grid-cols-2 > div:last-child",
+        "[class*='assistant-message']"
+      ]
+    },
+    "inputBox": {
+      "primary": "#prompt-textarea",
+      "fallbacks": [
+        "textarea[placeholder*='Message']",
+        "textarea[placeholder*='Send']",
+        "[contenteditable='true']"
+      ]
+    },
+    "sendButton": {
+      "primary": "button[data-testid='send-button']",
+      "fallbacks": [
+        "button[aria-label='Send']",
+        "button[type='submit']"
+      ]
+    },
+    "streamingText": {
+      "primary": "[data-message-author-role='assistant'] .markdown",
+      "fallbacks": [
+        "[class*='streaming']",
+        ".result-streaming"
+      ]
+    },
+    "modelSelector": {
+      "primary": "[data-testid='model-selector']",
+      "fallbacks": [
+        "button[aria-label='Switch model']",
+        "[class*='model-select']"
+      ]
+    }
+  },
+  "mutationObserver": {
+    "target": "[class*='react-scroll-to-bottom'], #__next",
+    "config": {
+      "childList": true,
+      "subtree": true,
+      "characterData": true
+    }
+  }
+}

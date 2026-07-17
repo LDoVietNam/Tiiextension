@@ -1,0 +1,221 @@
+================================================================================
+                    Z:\01_PROJECTS\apps\Tiiextension
+                         Project Tree (2026-07-16)
+================================================================================
+
+📦 Tiiextension/
+├── 📄 package.json                          (version: v2.0.0)
+├── 📄 AGENTS.MD                             (Updated v2.0 architecture)
+├── 📄 README.md
+├── 📄 IMPLEMENTATION-PLAN.md               (Milestone A plan)
+├── 📄 CURRENT-STATE.md
+├── 📄 FEATURE-MATRIX.md
+├── 📄 SECURITY.md
+├── 📄 VERIFICATION.md
+├── 📄 PROTOCOL.md
+├── 📄 WALKTHROUGH.md
+├── 📄 TEST-REPORT.md
+├── 📄 RELEASE-NOTES.md
+├── 📄 tree-bundle.txt                      (this file)
+│
+├── 📁 extension/                           (Chrome MV3 Extension)
+│   ├── 📄 manifest.json
+│   ├── 📄 manifest.firefox.json
+│   ├── 📄 popup.html
+│   ├── 📁 platforms/
+│   │   └── 📁 chatgpt/
+│   │       ├── chatgpt-detector.js
+│   │       ├── chatgpt-composer.js
+│   │       ├── chatgpt-response-observer.js
+│   │       ├── chatgpt-tool-call-parser.js
+│   │       └── chatgpt-web-provider.js
+│   ├── 📁 plugins/
+│   ├── 📁 config/
+│   │   └── workspaces.json                (deprecated reference)
+│   └── 📁 src/
+│       ├── background.js
+│       ├── ti-router-client.js            (NEW v2.0 - compatibility wrapper)
+│       ├── tool-router.js               (deprecated - use adapter)
+│       ├── workspace-registry.js        (UPDATED - reads from _workspace)
+│       ├── block-parser.js
+│       ├── session-manager.js
+│       ├── event-bus.js
+│       ├── model-selector.js
+│       ├── provider-registry.js
+│       ├── cdp-engine.js
+│       ├── browser-polyfill.js
+│       ├── chatgpt-content.js
+│       ├── popup.js / popup.css
+│       ├── sidepanel.js / .html / .css
+│       └── context-bridge/
+│           └── server.js                (to be moved)
+│
+├── 📁 native-host/                         (Node.js Native Runtime - Context Runtime)
+│   ├── 📄 package.json
+│   ├── 📁 bin/
+│   │   └── agent-cli.js
+│   ├── 📁 config/
+│   │   └── runtime.json
+│   ├── 📁 src/
+│   │   ├── context/                       (NEW - Context Services)
+│   │   │   ├── workspace-service.js      (NEW - workspace management)
+│   │   │   ├── revision-service.js       (NEW - SHA-256 + git tracking)
+│   │   │   ├── repository-service.js     (NEW - file read/list/stat/search)
+│   │   │   ├── search-service.js         (NEW - text search + symbol extraction)
+│   │   │   ├── symbol-service.js         (NEW - symbol index, refs, deps)
+│   │   │   └── context-tools.js          (NEW - tool registry & handler)
+│   │   ├── orchestration/                 (NEW - Request Dispatcher)
+│   │   │   └── request-dispatcher.js     (NEW - tool call dispatch)
+│   │   ├── clients/                       (NEW - TiRouter Client)
+│   │   │   └── ti-router-client.js       (NEW - resilient HTTP client)
+│   │   ├── adapters/                    (NEW - Tool Call Forwarder)
+│   │   │   └── tool-call-forwarder.js    (NEW - normalize + forward)
+│   │   ├── filesystems.js               (existing - filesystem tools)
+│   │   ├── git-tools.js                 (existing - git operations)
+│   │   ├── policy-engine.js             (existing)
+│   │   ├── project-tools.js             (existing)
+│   │   ├── process-tools.js             (existing)
+│   │   ├── task-engine.js               (existing)
+│   │   ├── payload-worker.js            (existing)
+│   │   ├── verification-tools.js        (existing)
+│   │   ├── provider-routing-tools.js    (existing)
+│   │   ├── provider-connectors.js       (existing)
+│   │   ├── local-api.js                 (existing - HTTP API :18401)
+│   │   ├── audit-store.js               (existing)
+│   │   ├── event-bus.js                 (existing)
+│   │   ├── protocol.js                  (existing)
+│   │   ├── runtime.js                   (UPDATED - context tools dispatch)
+│   │   └── ...                          (existing)
+│   └── 📁 manifests/
+│       └── com.chatgpt_native_agent.host.json
+│
+├── 📁 mcp-bridge/                          (MCP Bridge - thin adapter)
+│   ├── 📄 package.json
+│   └── 📁 src/
+│       └── server.js
+│
+├── 📁 cloudflare/                          (Cloudflare Tunnel)
+│   ├── 📄 .env.example
+│   └── 📄 config.yml
+│
+├── 📁 payloads/                            (Payload examples)
+│   └── 📁 examples/
+│       └── 📁 hello/
+│           └── manifest.json
+│
+├── 📁 openapi/                             (OpenAPI spec)
+│   └── 📄 chatgpt-action.yaml
+│
+├── 📁 docs/                                (Documentation)
+│   ├── PROTOCOL.md
+│   ├── MCP-BRIDGE.md
+│   ├── CLOUDFLARE-TUNNEL.md
+│   ├── GPT-CUSTOM-ACTION.md
+│   ├── PAYLOADS.md
+│   ├── ORCHESTRATOR.md
+│   ├── TROUBLESHOOTING.md
+│   ├── VERIFICATION.md
+│   └── tirouter-integration.md
+│
+├── 📁 scripts/                             (PowerShell + Node.js scripts)
+│   ├── install-native-host.ps1
+│   ├── uninstall-native-host.ps1
+│   ├── tiiextension-up.ps1
+│   ├── tiiextension-down.ps1
+│   ├── start-api.ps1
+│   ├── start-tunnel.ps1
+│   ├── doctor.ps1
+│   ├── package-release.mjs
+│   └── zip-writer.mjs
+│
+├── 📁 tests/
+├── 📁 runtime/
+├── 📁 logs/
+├── 📁 secrets/                             (gitignored)
+│
+├── 📁 .github/
+│   └── 📁 workflows/
+│       ├── README.md
+│       └── tirouter-auto.yml
+│
+└── 📁 .kilo/
+    ├── 📄 .gitignore
+    ├── 📄 agent-manager.json
+    └── 📁 node_modules/
+
+================================================================================
+                         📁 _workspace (Source of Truth)
+================================================================================
+
+📁 _workspace/
+└── workspace-registry.json                  (NEW - shared workspace registry)
+
+================================================================================
+                         📝 MILESTONE A STATUS
+================================================================================
+
+✅ HOÀN THÀNH (Code created & syntax verified):
+1. Native Host - Context Services (5 services):
+   - native-host/src/context/workspace-service.js
+   - native-host/src/context/revision-service.js
+   - native-host/src/context/repository-service.js
+   - native-host/src/context/search-service.js
+   - native-host/src/context/symbol-service.js
+
+2. Native Host - Context Tools Registry:
+   - native-host/src/context/context-tools.js
+
+3. Orchestration Layer:
+   - native-host/src/orchestration/request-dispatcher.js
+
+4. TiRouter Client (Resilient):
+   - native-host/src/clients/ti-router-client.js
+   (circuit breaker, retry, backoff, idempotency, health cache)
+
+5. Tool Call Forwarder:
+   - native-host/src/adapters/tool-call-forwarder.js
+
+6. Source of Truth:
+   - _workspace/workspace-registry.json
+
+7. Extension Compatibility:
+   - extension/src/ti-router-client.js (wrapper → Native Host)
+   - extension/src/workspace-registry.js (reads via Native Host)
+
+8. Runtime Integration:
+   - native-host/src/runtime.js (context tools dispatch added)
+   - native-host/src/context/context-tools.js (tool registry)
+   - native-host/src/tool-manifest.js (new tools added)
+
+9. Documentation:
+   - AGENTS.MD (v2.0 architecture)
+   - IMPLEMENTATION-PLAN.md (Milestone A plan)
+   - tree-bundle.txt (this file)
+
+🚧 VERIFICATION GATE (Cần hoàn thành):
+
+- [ ] Native Host start test
+- [ ] Extension → Native Host handshake test
+- [ ] Contract tests:
+    - workspace.status
+    - repository.read
+    - search.text
+    - revision.current
+    - router.health
+- [ ] Failure injection tests:
+    - TiRouter down
+    - Registry missing
+    - Timeout
+    - Path traversal
+- [ ] Path traversal tests
+- [ ] Timeout/error normalization tests
+- [ ] Không còn production dependency vào context-bridge/server.js
+- [ ] Tool-router cũ chỉ còn compatibility wrapper
+- [ ] Có rollback verification
+
+🔄 NEXT STEPS:
+1. Chạy integration tests
+2. Fix issues từ tests
+3. Migrate context-bridge/server.js logic vào context services
+4. Deprecate tool-router.js, workspaces.json cũ
+5. Final cleanup & documentation

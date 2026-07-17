@@ -1,0 +1,26 @@
+{
+  "name": "tiiextension",
+  "version": "1.3.0",
+  "private": true,
+  "type": "module",
+  "description": "Tiiextension: Chrome/Edge MV3 extension plus native host, MCP bridge, and tunnel-ready GPT control runtime.",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "check": "node scripts/check-syntax.mjs",
+    "static-check": "node scripts/static-ui-check.mjs",
+    "package": "node scripts/package-release.mjs",
+    "package:firefox": "node scripts/package-release.mjs --firefox",
+    "package:dry-run": "node scripts/package-release.mjs --dry-run",
+    "doctor": "node native-host/bin/agent-cli.js doctor",
+    "bridge": "node extension/bridge-server.js",
+    "orchestrator:up": "node native-host/bin/agent-cli.js up",
+    "orchestrator:down": "node native-host/bin/agent-cli.js down",
+    "orchestrator:status": "node native-host/bin/agent-cli.js status"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1"
+  }
+}
