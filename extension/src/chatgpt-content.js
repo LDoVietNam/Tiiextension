@@ -449,6 +449,10 @@ if (!globalThis.__CHATGPT_NATIVE_AGENT_CONTENT_V1__) {
         if (text && !node.dataset.scanned) {
           node.dataset.scanned = "true";
           console.debug('[Tiiextension] Found assistant message:', text.slice(0, 100));
+          if (autoRunEnabled && text.includes('cnagent/1')) {
+            const response = await runtime.sendMessage({ type: 'chatgpt.blocks', payload: { text, sendResultBack: true } });
+            if (response?.result?.count) updateOverlayStatus(`Executed ${response.result.count} GPT action(s)`);
+          }
         }
       }
       return { scanned: true, count: nodes.length };
@@ -479,6 +483,7 @@ if (!globalThis.__CHATGPT_NATIVE_AGENT_CONTENT_V1__) {
     if (message?.type === "chatgpt.ask") return ask(message.payload?.prompt, message.payload?.timeoutMs, message.payload?.requestId);
     if (message?.type === "chatgpt.send_result") return sendResultToChat(message.payload?.result);
     if (message?.type === "chatgpt.submit_goal") return submitRawPrompt(buildAgentPrompt(message.payload?.goal));
+    if (message?.type === "chatgpt.blocks_result") return sendResultToChat(message.payload?.results);
     if (message?.type === "chatgpt.scan") return scanAssistantMessages();
     if (message?.type === "chatgpt.select_model") return selectVisibleModel(message.payload?.label);
     if (message?.type === "chatgpt.extract_session") return {
