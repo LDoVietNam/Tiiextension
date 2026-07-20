@@ -3,7 +3,7 @@
 # Run from Z:\01_PROJECTS\apps\Tiiextension
 
 API_KEY="tzcirtruyBU6bOj0zpW6HF6lS4ls0j9Qm2mb_ERhxeI"
-BASE="http://127.0.0.1:1840"
+BASE="http://127.0.0.1:18401"
 ROOT="Z:/01_PROJECTS/apps/Tiiextension"
 
 echo "=== 1MCP Dashboard API Verification ==="
