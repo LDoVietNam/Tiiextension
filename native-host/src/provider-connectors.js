@@ -13,6 +13,7 @@ const PROVIDER_OPERATIONS = Object.freeze({
   "deepai-web": ["chat.completions", "images.generations"],
   "felo-chat": "chat.completions",
   "freetheai-openai": "chat.completions",
+  "sub2api-openai": "chat.completions",
   "mixedbread-embeddings": "embeddings",
   "edge-tts": "audio.speech",
   gtts: "audio.speech",
@@ -119,6 +120,8 @@ export function createProviderConnectors({
     switch (request.provider) {
       case "freetheai-openai":
         return dispatchFreeTheAi(request, { fetchImpl, readSetting, timeoutMs });
+      case "sub2api-openai":
+        return dispatchSub2Api(request, { fetchImpl, readSetting, timeoutMs });
       case "mixedbread-embeddings":
         return dispatchMixedbread(request, { fetchImpl, readSetting, timeoutMs });
       case "edge-tts":
@@ -168,7 +171,25 @@ export function createProviderConnectors({
     }
   }
 
+  async function stream(input, onEvent) {
+    if (typeof onEvent !== "function") {
+      throw connectorError("PROVIDER_STREAM_HANDLER_REQUIRED", "A provider stream handler is required", {
+        status: 400,
+      });
+    }
+    assertNoCredentialMaterial(input);
+    const request = normalizeRequest(input);
+    assertOperationSupported(request.provider, request.operation);
+    if (request.provider !== "sub2api-openai") {
+      throw connectorError("PROVIDER_STREAM_UNSUPPORTED", "Provider does not support native streaming", {
+        status: 400,
+      });
+    }
+    return dispatchSub2ApiStream(request, { fetchImpl, readSetting, timeoutMs }, onEvent);
+  }
+
   dispatch.dispatch = dispatch;
+  dispatch.stream = stream;
   dispatch.getStatus = () => getConnectorStatus({ extensionBridge, readSetting });
   return dispatch;
 }
@@ -221,6 +242,45 @@ async function dispatchFreeTheAi(request, context) {
     body,
     secrets: [apiKey],
   });
+}
+
+async function dispatchSub2Api(request, context) {
+  const apiKey = requireSecret(context.readSetting, "SUB2API_API_KEY", "Sub2API");
+  const url = resolveSub2ApiEndpoint(context.readSetting);
+  const body = cloneSafe(request.payload);
+  body.model = selectUpstreamModel(
+    body.model || request.model,
+    "sub2api/auto",
+    context.readSetting("SUB2API_MODEL", "auto"),
+  );
+  return requestJson({
+    ...context,
+    request,
+    url,
+    headers: { authorization: `Bearer ${apiKey}` },
+    body,
+    secrets: [apiKey],
+  });
+}
+
+async function dispatchSub2ApiStream(request, context, onEvent) {
+  const apiKey = requireSecret(context.readSetting, "SUB2API_API_KEY", "Sub2API");
+  const url = resolveSub2ApiEndpoint(context.readSetting);
+  const body = cloneSafe(request.payload);
+  body.model = selectUpstreamModel(
+    body.model || request.model,
+    "sub2api/auto",
+    context.readSetting("SUB2API_MODEL", "auto"),
+  );
+  body.stream = true;
+  return requestSse({
+    ...context,
+    request,
+    url,
+    headers: { authorization: `Bearer ${apiKey}` },
+    body,
+    secrets: [apiKey],
+  }, onEvent);
 }
 
 async function dispatchMixedbread(request, context) {
@@ -304,6 +364,95 @@ async function requestJson({ fetchImpl, request, url, headers, body, timeoutMs, 
     });
   }
   return sanitizeResponse(value, new WeakMap(), secrets);
+}
+
+async function requestSse({ fetchImpl, request, url, headers, body, timeoutMs, secrets = [] }, onEvent) {
+  const response = await performFetch(fetchImpl, url, {
+    method: "POST",
+    headers: {
+      accept: "text/event-stream",
+      "content-type": "application/json",
+      ...headers,
+    },
+    body: JSON.stringify(body),
+    redirect: "error",
+  }, request.timeoutMs || timeoutMs);
+  if (!response?.ok) throw upstreamHttpError(response);
+  if (!response.body || typeof response.body.getReader !== "function") {
+    throw connectorError("PROVIDER_STREAM_INVALID", "Provider returned no readable SSE stream", {
+      retryable: true,
+    });
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let pending = "";
+  let done = false;
+  const deadline = Date.now() + clampTimeout(request.timeoutMs || timeoutMs);
+  try {
+    while (!done) {
+      const { value, done: readerDone } = await readSseChunk(reader, deadline);
+      pending += decoder.decode(value || new Uint8Array(), { stream: !readerDone });
+      const frames = pending.split(/\r?\n\r?\n/);
+      pending = frames.pop() || "";
+      for (const frame of frames) {
+        const data = frame
+          .split(/\r?\n/)
+          .filter((line) => line.startsWith("data:"))
+          .map((line) => line.slice(5).trimStart())
+          .join("\n");
+        if (!data) continue;
+        if (data === "[DONE]") {
+          done = true;
+          break;
+        }
+        let event;
+        try {
+          event = JSON.parse(data);
+        } catch {
+          throw connectorError("PROVIDER_STREAM_INVALID", "Provider sent invalid SSE JSON", {
+            retryable: true,
+          });
+        }
+        await onEvent(sanitizeResponse(event, new WeakMap(), secrets));
+      }
+      if (readerDone) break;
+    }
+  } catch (error) {
+    if (error instanceof ProviderConnectorError) throw error;
+    throw wrapProviderError(error, "PROVIDER_STREAM_FAILED");
+  } finally {
+    reader.releaseLock?.();
+  }
+  return { done: true };
+}
+
+async function readSseChunk(reader, deadline) {
+  const remaining = deadline - Date.now();
+  if (remaining <= 0) {
+    await reader.cancel?.();
+    throw connectorError("PROVIDER_TIMEOUT", "Provider stream timed out", {
+      retryable: true,
+      status: 504,
+    });
+  }
+  let timer;
+  try {
+    return await Promise.race([
+      reader.read(),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(connectorError("PROVIDER_TIMEOUT", "Provider stream timed out", {
+          retryable: true,
+          status: 504,
+        })), remaining);
+      }),
+    ]);
+  } catch (error) {
+    if (error?.code === "PROVIDER_TIMEOUT") await reader.cancel?.();
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function requestAudio({ fetchImpl, request, url, body, timeoutMs }) {
@@ -479,6 +628,26 @@ function resolveRemoteEndpoint(readSetting, {
   return validateConnectorUrl(new URL(path.replace(/^\/+/, ""), baseUrl).href, { kind: "remote" });
 }
 
+function resolveSub2ApiEndpoint(readSetting) {
+  const exact = firstSetting(readSetting, ["SUB2API_CHAT_URL"]);
+  if (exact) return validateConnectorUrl(exact, { kind: "remote" });
+
+  const base = firstSetting(readSetting, ["SUB2API_BASE_URL"]);
+  if (!base) {
+    throw connectorError(
+      "PROVIDER_NOT_CONFIGURED",
+      "Sub2API base URL is not configured in the native runtime",
+      { status: 503 },
+    );
+  }
+
+  const baseUrl = validateConnectorUrl(ensureTrailingSlash(base), { kind: "remote" });
+  const endpointPath = baseUrl.pathname.replace(/\/+$/, "").endsWith("/v1")
+    ? "chat/completions"
+    : "v1/chat/completions";
+  return validateConnectorUrl(new URL(endpointPath, baseUrl).href, { kind: "remote" });
+}
+
 function getConnectorStatus({ extensionBridge, readSetting }) {
   const extensionReady = Boolean(
     extensionBridge
@@ -489,6 +658,7 @@ function getConnectorStatus({ extensionBridge, readSetting }) {
     ...["chatgpt-web", "minimax-agent-web", "microsoft-designer-web", "deepai-web", "felo-chat"]
       .map((provider) => ({ provider, configured: extensionReady, mode: "browser-session" })),
     { provider: "freetheai-openai", configured: Boolean(readSetting("FREETHEAI_API_KEY")), mode: "remote-api" },
+    { provider: "sub2api-openai", configured: Boolean(readSetting("SUB2API_API_KEY") && readSetting("SUB2API_BASE_URL")), mode: "remote-api" },
     { provider: "mixedbread-embeddings", configured: Boolean(readSetting("MIXEDBREAD_API_KEY")), mode: "remote-api" },
     { provider: "edge-tts", configured: Boolean(firstSetting(readSetting, ["EDGE_TTS_SIDECAR_URL", "EDGE_TTS_URL"])), mode: "loopback-sidecar" },
     { provider: "gtts", configured: Boolean(firstSetting(readSetting, ["GTTS_SIDECAR_URL", "GTTS_URL"])), mode: "loopback-sidecar" },
