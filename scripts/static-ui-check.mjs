@@ -7,7 +7,7 @@ export async function runStaticChecks(projectRoot = path.resolve(path.dirname(fi
   const failures = [];
   const manifest = await readJson(path.join(projectRoot, "extension/manifest.json"), failures);
   const pkg = await readJson(path.join(projectRoot, "package.json"), failures);
-  const popup = await fs.readFile(path.join(projectRoot, "extension/src/popup.html"), "utf8");
+  const popup = await fs.readFile(path.join(projectRoot, "extension/popup.html"), "utf8");
   const panel = await fs.readFile(path.join(projectRoot, "extension/src/sidepanel.html"), "utf8");
   const modes = [...popup.matchAll(/data-mode="([^"]+)"/g)].map((match) => match[1]);
   const panels = [...panel.matchAll(/data-panel="([^"]+)"/g)].map((match) => match[1]);
@@ -19,8 +19,8 @@ export async function runStaticChecks(projectRoot = path.resolve(path.dirname(fi
   for (const permission of ["nativeMessaging", "sidePanel", "storage", "scripting", "tabs", "debugger", "downloads"]) {
     if (!manifest?.permissions?.includes(permission)) failures.push(`Missing permission: ${permission}`);
   }
-  for (const file of ["popup.html", "sidepanel.html"]) {
-    const html = await fs.readFile(path.join(projectRoot, "extension/src", file), "utf8");
+  for (const [dir, file] of [["extension", "popup.html"], ["extension/src", "sidepanel.html"]]) {
+    const html = await fs.readFile(path.join(projectRoot, dir, file), "utf8");
     if (/<script[^>]+src=["']https?:/i.test(html)) failures.push(`${file} references remote code`);
     if (/<script(?![^>]*src=)/i.test(html)) failures.push(`${file} contains inline script`);
   }
