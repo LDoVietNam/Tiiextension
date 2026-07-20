@@ -161,7 +161,7 @@ function Ensure-Config {
     api = [ordered]@{
       enabled = $true
       host = "127.0.0.1"
-      port = 1840
+      port = 18401
       token_file = $TokenPath
       allowed_origins = @()
     }
