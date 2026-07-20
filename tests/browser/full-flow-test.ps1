@@ -2,7 +2,7 @@
 # This simulates what the browser dashboard does via API calls
 
 $API_KEY = "tzcirtruyBU6bOj0zpW6HF6lS4ls0j9Qm2mb_ERhxeI"
-$BASE = "http://127.0.0.1:1840"
+$BASE = "http://127.0.0.1:18401"
 $ROOT = "Z:\01_PROJECTS\apps\Tiiextension"
 
 function Invoke-Tool {
