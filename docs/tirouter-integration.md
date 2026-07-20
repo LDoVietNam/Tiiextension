@@ -45,7 +45,7 @@ Thêm vào `manifest.json` để hỗ trợ cookie cross-domain:
 {
   "permissions": ["cookies"],
   "host_permissions": [
-    "http://localhost:1840/*",
+    "http://localhost:18401/*",
     "https://*.chatgpt.com/*"
   ]
 }
@@ -77,6 +77,6 @@ cd Tirouter/CLIProxyAPI
 go run cmd/server/main.go
 
 # Test API
-curl http://localhost:1840/api/cookie
-curl http://localhost:1840/health
+curl http://localhost:18401/api/cookie
+curl http://localhost:18401/health
 ```
