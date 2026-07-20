@@ -1,6 +1,7 @@
 import { runtime } from './browser-polyfill.js';
 import { sendNative } from './native-client.js';
 import { initPairingUI } from './pairing.js';
+import { createAgentConsole } from './extension-agent-console.js';
 
 let elements = {};
 
@@ -45,11 +46,13 @@ function getElements() {
   };
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  elements = getElements();
-  bindEvents();
-  initialize().catch(console.error);
-});
+if (typeof document !== "undefined") {
+  document.addEventListener("DOMContentLoaded", () => {
+    elements = getElements();
+    bindEvents();
+    initialize().catch(console.error);
+  });
+}
 
 function bindEvents() {
   // Bind panel navigation buttons
@@ -158,7 +161,7 @@ async function refreshModelFromCookie() {
 
 // ===== CONNECTION CHECKS =====
 async function refreshConnections() {
-  await Promise.allSettled([checkCtxBridge(), checkGoBridge(), checkJobBridge()]);
+  await Promise.allSettled([checkNativeRuntime(), checkBrowserContext()]);
 }
 
 function setPill(id, ok, label) {
@@ -168,35 +171,27 @@ function setPill(id, ok, label) {
   el.textContent = label;
 }
 
-async function checkCtxBridge() {
+async function checkNativeRuntime() {
   try {
-    const r = await fetch("http://127.0.0.1:3333/health", { cache: "no-store" });
-    setPill("ctx-bridge-status", r.ok, "File tools");
+    const result = await nativeCall("status", {});
+    setPill("native-runtime-status", Boolean(result.connected), result.connected ? "Native runtime connected" : "Native runtime offline");
   } catch {
-    setPill("ctx-bridge-status", false, "File tools off");
+    setPill("native-runtime-status", false, "Native runtime offline");
   }
 }
 
-async function checkGoBridge() {
-  let paired = false;
+async function checkBrowserContext() {
   try {
-    const res = await chrome.storage.local.get("tiSessionPaired");
-    paired = Boolean(res.tiSessionPaired);
-  } catch { /* storage unavailable */ }
-  setPill("go-bridge-status", paired, paired ? "Runtime paired" : "Runtime unpaired");
-}
-
-async function checkJobBridge() {
-  try {
-    const r = await fetch("http://127.0.0.1:5050/health", { cache: "no-store" });
-    setPill("job-bridge-status", r.ok, "Job Bridge");
+    const result = await call("ai.tabs.discover", {});
+    setPill("browser-context-status", Boolean(result?.tabs?.length), result?.tabs?.length ? `${result.tabs.length} browser tab(s)` : "No AI browser tab");
   } catch {
-    setPill("job-bridge-status", false, "Job Bridge off");
+    setPill("browser-context-status", false, "Browser context unavailable");
   }
 }
 
-// ===== RUN GOAL =====
-const BRIDGE_BASE = 'http://127.0.0.1:5050';
+const agentConsole = createAgentConsole({
+  sendMessage: async ({ type, payload }) => call(type, payload),
+});
 
 async function runGoal() {
   const goal = elements.goal.value.trim();
@@ -204,40 +199,18 @@ async function runGoal() {
   setRunning(true);
   appendMessage("goal", goal);
   elements["task-summary"].classList.remove("empty");
-  elements["task-summary"].textContent = "Task submitted. Dispatching job to bridge…";
-
-  // Dispatch a job to the OpenBrowser job bridge (:5000). The bridge streams it
-  // over SSE -> background.js -> active ChatGPT tab (content-script.js runs it).
-  // Payload follows the bridge contract; adjust once the exact schema is final.
-  const sessionId = `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const job = {
-    sessionId,
-    delivery: "inline",
-    message: goal,
-    mode: "run",
-    source: "sidepanel.run-goal"
-  };
+  elements["task-summary"].textContent = "Submitting browser automation task…";
 
   try {
-    const resp = await fetch(`${BRIDGE_BASE}/browser/jobs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(job)
-    });
-    if (!resp.ok) {
-      const text = await resp.text().catch(() => "");
-      throw new Error(`Bridge ${resp.status}${text ? `: ${text}` : ""}`);
-    }
-
-    state.taskId = sessionId;
+    const result = await agentConsole.submit(goal);
+    state.taskId = result.task_id;
     elements["cancel-task"].disabled = false;
     elements["task-state"].textContent = "Submitted";
-    elements["task-summary"].textContent = `Job ${sessionId}\nDispatched to ChatGPT via bridge…`;
-    appendMessage("assistant", `Job dispatched to bridge (session ${sessionId}). Watch it run in the ChatGPT tab.`);
-
-    await pollBridgeResponse(sessionId);
+    elements["task-summary"].textContent = `Task ${state.taskId}\nExtension Agent is handling browser automation.`;
+    appendMessage("assistant", `Task ${state.taskId} submitted to Extension Agent.`);
+    await refreshActivity();
   } catch (error) {
-    appendMessage("error", `BRIDGE_ERROR: ${error.message}`);
+    appendMessage("error", `${error.code || "TASK_SUBMIT_FAILED"}: ${error.message}`);
     elements["task-state"].textContent = "Failed";
     elements["task-summary"].textContent = error.message;
     appendDiagnostic(error);
@@ -246,27 +219,16 @@ async function runGoal() {
   }
 }
 
-// Best-effort poll for the job result posted back by content-script.js.
-// Works against the local fallback bridge-server.js; degrades gracefully if
-// the running bridge does not expose this GET endpoint (the ChatGPT tab still
-// executes the job regardless).
-async function pollBridgeResponse(sessionId) {
-  for (let i = 0; i < 120; i++) {
-    try {
-      const resp = await fetch(`${BRIDGE_BASE}/browser/response/${sessionId}`);
-      if (resp.ok) {
-        const data = await resp.json().catch(() => ({}));
-        const text = data?.text ?? data?.result?.text ?? "";
-        if (text) {
-          elements["task-state"].textContent = "Completed";
-          elements["task-summary"].textContent = `Job ${sessionId}\nGoal completed`;
-          appendMessage("assistant", text.slice(0, 4000));
-          await Promise.allSettled([refreshActivity(), refreshChanges(), loadTree()]);
-          return;
-        }
-      }
-    } catch { /* endpoint may not exist on the running bridge; keep waiting */ }
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+async function cancelTask() {
+  if (!state.taskId) return;
+  try {
+    await agentConsole.cancel(state.taskId);
+    elements["task-state"].textContent = "Cancelled";
+    elements["task-summary"].textContent = `Task ${state.taskId} cancelled.`;
+  } catch (error) {
+    appendDiagnostic(`cancelTask failed: ${error.message}`);
+  } finally {
+    setRunning(false);
   }
 }
 
@@ -284,7 +246,7 @@ function setRunning(running) {
   state.running = running;
   elements["run-goal"].disabled = running;
   elements["cancel-task"].disabled = !running;
-  elements["run-goal"].textContent = running ? "Running..." : "Run with ChatGPT";
+  elements["run-goal"].textContent = running ? "Submitting..." : "Submit browser task";
 }
 
 function appendMessage(type, content) {
