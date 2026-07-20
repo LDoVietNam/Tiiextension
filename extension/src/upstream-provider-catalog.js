@@ -146,6 +146,30 @@ const RAW_PROVIDER_CATALOG = [
     },
   },
   {
+    id: "sub2api-openai",
+    name: "Sub2API OpenAI Gateway",
+    vendor: "Sub2API",
+    description: "Self-hosted Sub2API OpenAI-compatible gateway configured only in the native runtime.",
+    aliases: ["sub2api", "sub2api-gateway"],
+    adapter: "sub2api-openai",
+    credentialMode: "runtime-config",
+    capabilities: [C.CHAT_COMPLETIONS, C.MULTIMODAL_INPUT, C.STREAMING, C.TOOL_USE, C.ROUTER_UPSTREAM],
+    integrationModes: [I.OPENAI_COMPATIBLE, I.HTTP_API, I.ROUTER_UPSTREAM],
+    models: [
+      {
+        id: "sub2api/auto",
+        name: "Sub2API Automatic Model",
+        aliases: ["sub2api-auto"],
+        capabilities: [C.CHAT_COMPLETIONS, C.MULTIMODAL_INPUT, C.STREAMING, C.TOOL_USE],
+      },
+    ],
+    router: {
+      exposed: true,
+      protocol: "openai-compatible",
+      routes: [R.CHAT_COMPLETIONS],
+    },
+  },
+  {
     id: "edge-tts",
     name: "Edge TTS",
     vendor: "Microsoft Edge",
@@ -572,4 +596,3 @@ export function serializePublicProvider(providerOrAlias, space = 0) {
 export function serializePublicCatalog({ space = 0, ...filters } = {}) {
   return JSON.stringify(listPublicProviders(filters), null, space);
 }
-
