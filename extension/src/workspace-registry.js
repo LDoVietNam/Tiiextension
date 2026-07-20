@@ -76,8 +76,7 @@ function getDefaultConfig() {
       { id: 'shared', root: 'Z:\\01_PROJECTS\\apps\\shared', permissions: ['read'], type: 'library' }
     ],
     services: {
-      tirouter: { url: 'http://127.0.0.1:1870' },
-      contextBridge: { url: 'http://127.0.0.1:3333' }
+      tirouter: { url: 'http://127.0.0.1:1870' }
     },
     toolPolicies: {},
     crossProjectAccess: {}
