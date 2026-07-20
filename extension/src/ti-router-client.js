@@ -86,7 +86,7 @@ export class TiRouterCompatClient {
   }
 
   async _callHttpTool(toolName, args, options = {}) {
-    const response = await fetch(`${this.nativeHostUrl}/v1/tools/${toolName}/call`, {
+    const response = await fetch(`${this.nativeHostUrl}/v1/tools/call`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -94,9 +94,7 @@ export class TiRouterCompatClient {
       },
       body: JSON.stringify({
         tool: toolName,
-        args: args || {},
-        workspaceId: options.workspaceId,
-        revision: options.revision
+        args: args || {}
       })
     });
 
