@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 
 # Set environment variables
 $env:DASHBOARD_PATH = "Z:\01_PROJECTS\apps\Tiiextension\dashboard"
-$env:PORT = "1840"
+$env:PORT = "18401"
 
 # Ensure we're in the right directory
 Set-Location "Z:\01_PROJECTS\apps\Tiiextension\Tirouter\CLIProxyAPI"
