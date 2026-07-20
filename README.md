@@ -204,6 +204,49 @@ Invoke-RestMethod http://127.0.0.1:18401/v1/agent/goal `
   -Body '{"goal":"index workspace and summarize","workspace_id":"package-root","mode":"plan_then_execute"}'
 ```
 
+### Sub2API model gateway
+
+Tiiextension có thể dùng một instance Sub2API self-hosted làm model gateway cho
+native runtime. Đây là đường model độc lập với filesystem/CLI:
+
+```text
+GPT Web → Tiiextension extension → Native Messaging → filesystem / CLI
+Native runtime → Sub2API → model upstream
+```
+
+Sao chép `native-host/config/runtime/sub2api.env.example` vào secret store hoặc
+user environment của native runtime, rồi đặt `SUB2API_BASE_URL`,
+`SUB2API_API_KEY` và `SUB2API_MODEL`. URL phải là HTTPS. Key chỉ được đọc tại
+native runtime; không đặt key trong `chrome.storage`, browser content script,
+prompt GPT, task payload, hay file cấu hình commit vào Git.
+
+Sau khi runtime đang chạy, thử qua local API:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:18401/v1/chat/completions `
+  -Method POST `
+  -Headers @{ Authorization = "Bearer $token" } `
+  -ContentType "application/json" `
+  -Body '{"provider":"sub2api","model":"sub2api/auto","messages":[{"role":"user","content":"Reply with sub2api-ok"}]}'
+```
+
+`POST /v1/agent/model` dành cho agent runtime. Nó nhận cùng `messages`, hỗ trợ
+`stream: true`, `max_retries` (0–3) và `fallback_providers`. Khi streaming,
+response là SSE với `delta`, `done` hoặc `error`; router chỉ retry/fallback
+trước khi phát delta đầu tiên để không trộn hai câu trả lời. Ví dụ:
+
+```powershell
+curl.exe -N http://127.0.0.1:18401/v1/agent/model `
+  -H "Authorization: Bearer $token" `
+  -H "Content-Type: application/json" `
+  -d '{"provider":"sub2api","messages":[{"role":"user","content":"stream a short answer"}],"stream":true,"max_retries":1,"fallback_providers":["freetheai"]}'
+```
+
+Các block `cnagent/1` từ ChatGPT được deduplicate theo `block_id`. Read-only
+block chạy khi `executionEnabled` bật; block ghi/process/git chỉ chạy khi
+`autoApproveMutations` được bật rõ ràng trong extension storage, mặc định là
+`false`. Kết quả thực thi được gửi về đúng tab ChatGPT đã phát block.
+
 Khởi động API và tunnel:
 
 ```powershell
