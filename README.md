@@ -6,8 +6,8 @@ Extension có tính năng **đọc phiên ChatGPT đang hoạt động** (cookie
 
 ## Thành phần chính
 
-- Popup đúng hai mode `UI` và `API`; cả hai chat bình thường.
-- Side panel gồm Agent, Files, Changes và Activity.
+- Popup là runtime controller: xem trạng thái native runtime, Start/Stop backend và mở Side Panel.
+- Side panel là **Extension Agent Console** cho browser automation, Files, Changes và Activity. Task từ panel được gắn `agent: "extension-browser"`; runtime có thể điều phối phần ngoài browser sang PC Automation Agent theo policy.
 - Direct-control overlay trên ChatGPT Web.
 - Native Messaging `cnagent/1`, reconnect và handshake kiểm chứng host.
 - Durable task/event/call journal, idempotency và cancellation.
