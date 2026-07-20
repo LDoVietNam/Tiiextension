@@ -2,7 +2,7 @@
 param(
   [string]$Config = ".\native-host\config\default.workspaces.json",
   [string]$Host = "127.0.0.1",
-  [int]$Port = 1840
+  [int]$Port = 18401
 )
 
 $ErrorActionPreference = "Stop"
