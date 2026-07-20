@@ -58,7 +58,7 @@
          │              │  │    Registry     │  │                │
          └──────┬───────┘  └────────┬───────┘  └────────┬───────┘
                 │                   │                   │
-                │ port: 1840        │ port: 1870        │ port: 3333
+                │ port: 18401       │ port: 1870        │ port: 3333
                 │                   │                   │
                 ▼                   ▼                   ▼
     ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
@@ -156,7 +156,7 @@
 │  │ Benefits: Full OpenAI-compatible API, knowledge integration         │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                              │
-│  Path B: Native Host Direct (:1840)                                         │
+│  Path B: Native Host Direct (:18401)                                        │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
 │  │ Extension → Native Host → Filesystem/Git/Process tools            │   │
 │  │ Benefits: Direct local access, CDP control                          │   │
@@ -199,7 +199,7 @@
 │  Step 4: Verify Connection                                                  │
 │  ┌─────────────────────────────────────────────────────────────────────┐   │
 │  │ .\scripts\doctor.ps1 -Browser Both                               │   │
-│  │ Check: ports 1840, 1870, 3333, 18402 are listening                  │   │
+│  │ Check: ports 18401, 1870, 3333, 18402 are listening                 │   │
 │  └─────────────────────────────────────────────────────────────────────┘   │
 │                                                                              │
 │  Step 5: Open ChatGPT Web                                                   │
@@ -226,7 +226,7 @@
                                            ▼
 ┌──────────────┐                   ┌──────────────┐
 │ Native Host  │ ◀─────────────────│ Background   │
-│ (:1840)      │  WebSocket/WS     │ Service      │
+│ (:18401)     │  WebSocket/WS     │ Service      │
 │              │                   │ Worker       │
 │ - Filesystem │                   │ (background  │
 │ - Git        │                   │ .js)         │
