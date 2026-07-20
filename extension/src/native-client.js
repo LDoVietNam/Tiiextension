@@ -8,7 +8,7 @@ import {
   listBrowserProviders,
 } from "./browser-provider-bridge.js";
 
-const WS_URL = "ws://127.0.0.1:1840/v1/extension";
+const WS_URL = "ws://127.0.0.1:18401/v1/extension";
 const NATIVE_HOST_NAME = "com.chatgpt_native_agent.host";
 const DEFAULT_TIMEOUT_MS = 180_000;
 const IS_SERVICE_WORKER = typeof ServiceWorkerGlobalScope !== "undefined"
@@ -229,7 +229,7 @@ async function handleIncomingRequest(request) {
 
 function setupPairingListener() {
   // ws.pair is owned by ws-agent-bridge.js (Go runtime bridge on :9000).
-  // This client targets the native-host API on :1840 and must NOT respond to
+  // This client targets the native-host API on :18401 and must NOT respond to
   // ws.pair, or it would short-circuit the async :9000 pairing handshake.
 }
 
