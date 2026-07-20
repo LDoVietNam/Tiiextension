@@ -703,7 +703,7 @@
   }
 
   function buildAuthJson(sessionData) {
-    const payload = JSON.parse(atob(sessionData.accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'));
+    const payload = JSON.parse(atob(sessionData.accessToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
     const claim = payload['https://api.openai.com/auth'];
     return {
       auth: {
