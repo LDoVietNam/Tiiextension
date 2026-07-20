@@ -21,6 +21,7 @@ export function createUpstreamRouter({
   idFactory = (prefix) => `${prefix}_${crypto.randomUUID().replaceAll("-", "")}`,
 } = {}) {
   const dispatch = resolveDispatch(connectors);
+  const dispatchStream = resolveStream(connectors);
   const getStatus = resolveStatus(connectors);
 
   async function listModels() {
@@ -103,12 +104,31 @@ export function createUpstreamRouter({
     }
   }
 
+  async function dispatchStreamingOperation(operation, payload = {}, onEvent) {
+    if (typeof onEvent !== "function") {
+      throw routerError("ROUTER_STREAM_HANDLER_REQUIRED", "A stream handler is required", 400);
+    }
+    if (typeof dispatchStream !== "function") {
+      throw routerError("ROUTER_STREAM_UNAVAILABLE", "The configured provider connectors do not support streaming", 503);
+    }
+    const provider = selectProvider(payload, operation);
+    const model = typeof payload.model === "string" ? payload.model : null;
+    return dispatchStream({
+      provider,
+      operation,
+      model,
+      payload,
+      timeoutMs: payload.timeoutMs,
+    }, onEvent);
+  }
+
   return {
     listModels,
     listProviders,
     getProviderStatuses,
     dispatchOperation,
     dispatchRoute,
+    dispatchStreamingOperation,
   };
 }
 
@@ -124,6 +144,11 @@ function resolveStatus(connectors) {
     return connectors.getStatus.bind(connectors);
   }
   if (typeof connectors.getStatus === "function") return connectors.getStatus.bind(connectors);
+  return null;
+}
+
+function resolveStream(connectors) {
+  if (connectors && typeof connectors.stream === "function") return connectors.stream.bind(connectors);
   return null;
 }
 

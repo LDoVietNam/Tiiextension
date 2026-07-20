@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
   [string]$EnvPath = ".\cloudflare\.env",
-  [string]$Url = "http://127.0.0.1:1840",
+  [string]$Url = "http://127.0.0.1:18401",
   [switch]$NamedTunnel
 )
 

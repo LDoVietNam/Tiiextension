@@ -3,7 +3,7 @@
 // Run: node tests/browser/simple-verify.mjs
 
 const API_KEY = 'tzcirtruyBU6bOj0zpW6HF6lS4ls0j9Qm2mb_ERhxeI';
-const BASE = 'http://127.0.0.1:1840';
+const BASE = 'http://127.0.0.1:18401';
 const ROOT = 'Z:\\01_PROJECTS\\apps\\Tiiextension';
 
 async function api(path, opts = {}) {

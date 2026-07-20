@@ -9,7 +9,7 @@ import { attachWebSocket, webSocketAccept } from "./websocket.js";
 export function createLocalApi({
   runtime,
   host = "127.0.0.1",
-  port = 1840,
+  port = 18401,
   token,
   allowedOrigins = [],
   maxBodyBytes = 1024 * 1024,
@@ -238,6 +238,11 @@ if (method === "GET" && url.pathname === "/v1/workspaces") {
       return sendRawJson(response, 200, await router.getProviderStatuses());
     }
 
+    if (method === "POST" && url.pathname === "/v1/agent/model") {
+      assertAuthorization(request.headers.authorization);
+      return handleAgentModelRequest(response, await readJson(request));
+    }
+
     if (method === "POST" && isRawRoute(url.pathname)) {
       assertAuthorization(request.headers.authorization);
       return sendRawJson(response, 200, await router.dispatchRoute(url.pathname, await readJson(request)));
@@ -258,6 +263,69 @@ if (method === "GET" && url.pathname === "/v1/workspaces") {
     }
 
     throw apiError("API_ROUTE_NOT_FOUND", `Route not found: ${method} ${url.pathname}`);
+  }
+
+  async function handleAgentModelRequest(response, body) {
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      throw apiError("PROTOCOL_VALIDATION_ERROR", "agent model request must be an object");
+    }
+    if (!Array.isArray(body.messages) || body.messages.length === 0) {
+      throw apiError("PROTOCOL_VALIDATION_ERROR", "messages must be a non-empty array");
+    }
+
+    const providers = modelProviderCandidates(body);
+    const retries = clampRetries(body.max_retries ?? body.maxRetries);
+    if (body.stream === true) {
+      let emitted = false;
+      let lastError = null;
+      for (const provider of providers) {
+        for (let attempt = 0; attempt <= retries; attempt += 1) {
+          try {
+            await router.dispatchStreamingOperation("chat.completions", {
+              ...body,
+              provider,
+              stream: true,
+            }, async (event) => {
+              if (!emitted) {
+                writeSseHeaders(response);
+                emitted = true;
+              }
+              writeSse(response, "delta", { provider, event });
+            });
+            if (!emitted) writeSseHeaders(response);
+            writeSse(response, "done", { provider, model: body.model || null });
+            response.end();
+            return;
+          } catch (error) {
+            lastError = error;
+            if (emitted) {
+              writeSse(response, "error", serializeError(error));
+              response.end();
+              return;
+            }
+            if (!isRetryableProviderError(error) || attempt === retries) break;
+          }
+        }
+      }
+      throw lastError || apiError("PROVIDER_UNAVAILABLE", "No model provider is available");
+    }
+
+    let lastError = null;
+    for (const provider of providers) {
+      for (let attempt = 0; attempt <= retries; attempt += 1) {
+        try {
+          return sendRawJson(response, 200, await router.dispatchOperation("chat.completions", {
+            ...body,
+            provider,
+            stream: false,
+          }));
+        } catch (error) {
+          lastError = error;
+          if (!isRetryableProviderError(error) || attempt === retries) break;
+        }
+      }
+    }
+    throw lastError || apiError("PROVIDER_UNAVAILABLE", "No model provider is available");
   }
 
   function assertAuthorization(header) {
@@ -366,7 +434,53 @@ function isRawRoute(pathname) {
     "/v1/embeddings",
     "/v1/audio/speech",
     "/v1/audio/transcriptions",
+    "/v1/agent/model",
   ].includes(pathname);
+}
+
+function modelProviderCandidates(body) {
+  const values = [body.provider || "sub2api", ...(Array.isArray(body.fallback_providers) ? body.fallback_providers : [])];
+  const unique = [];
+  for (const value of values) {
+    if (typeof value !== "string" || !value.trim()) continue;
+    const normalized = value.trim();
+    if (!unique.includes(normalized)) unique.push(normalized);
+  }
+  if (unique.length === 0) unique.push("sub2api");
+  return unique;
+}
+
+function clampRetries(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 1;
+  return Math.max(0, Math.min(3, Math.floor(numeric)));
+}
+
+function isRetryableProviderError(error) {
+  return Boolean(error?.retryable) || [408, 429, 500, 502, 503, 504].includes(Number(error?.status));
+}
+
+function writeSseHeaders(response) {
+  if (response.headersSent) return;
+  response.writeHead(200, {
+    "Content-Type": "text/event-stream; charset=utf-8",
+    "Cache-Control": "no-store",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
+    "X-Content-Type-Options": "nosniff",
+  });
+}
+
+function writeSse(response, event, data) {
+  response.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+}
+
+function serializeError(error) {
+  return {
+    code: error?.code || "PROVIDER_STREAM_FAILED",
+    message: error?.message || "Provider stream failed",
+    retryable: isRetryableProviderError(error),
+  };
 }
 
 function sendJson(response, status, result) {

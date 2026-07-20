@@ -98,6 +98,87 @@ test("FreeTheAI uses its configured HTTPS endpoint and runtime-only bearer key",
   assert.equal(JSON.stringify(result).includes(secret), false);
 });
 
+test("Sub2API uses native runtime credentials and redacts them from responses", async () => {
+  const secret = "sub2api_secret_value";
+  const dispatch = createProviderConnectors({
+    env: {
+      SUB2API_API_KEY: secret,
+      SUB2API_BASE_URL: "https://sub2api.example.test",
+      SUB2API_MODEL: "configured-model",
+    },
+    fetchImpl: async (url, init) => {
+      assert.equal(url, "https://sub2api.example.test/v1/chat/completions");
+      assert.equal(init.headers.authorization, `Bearer ${secret}`);
+      assert.deepEqual(JSON.parse(init.body), {
+        messages: [{ role: "user", content: "ping" }],
+        model: "configured-model",
+      });
+      return jsonResponse({
+        choices: [{ message: { role: "assistant", content: "pong" } }],
+        token: secret,
+        echoed: `key=${secret}`,
+      });
+    },
+  });
+
+  const result = await dispatch({
+    provider: "sub2api",
+    operation: "chat.completions",
+    model: "sub2api/auto",
+    payload: { messages: [{ role: "user", content: "ping" }] },
+  });
+
+  assert.equal(result.choices[0].message.content, "pong");
+  assert.equal(result.token, undefined);
+  assert.equal(result.echoed, "key=[REDACTED]");
+  assert.equal(JSON.stringify(result).includes(secret), false);
+});
+
+test("Sub2API streams Server-Sent Events through the native connector", async () => {
+  const chunks = [];
+  const dispatch = createProviderConnectors({
+    env: {
+      SUB2API_API_KEY: "sub2api_stream_secret",
+      SUB2API_BASE_URL: "https://sub2api.example.test/v1",
+      SUB2API_MODEL: "configured-model",
+    },
+    fetchImpl: async (_url, init) => {
+      assert.equal(JSON.parse(init.body).stream, true);
+      return new Response([
+        "data: {\"choices\":[{\"delta\":{\"content\":\"xin \"}}]}\n\n",
+        "data: {\"choices\":[{\"delta\":{\"content\":\"chao\"}}]}\n\n",
+        "data: [DONE]\n\n",
+      ].join(""), { headers: { "content-type": "text/event-stream" } });
+    },
+  });
+
+  const result = await dispatch.stream({
+    provider: "sub2api",
+    operation: "chat.completions",
+    payload: { messages: [{ role: "user", content: "ping" }] },
+  }, (event) => chunks.push(event));
+
+  assert.deepEqual(chunks.map((event) => event.choices[0].delta.content), ["xin ", "chao"]);
+  assert.equal(result.done, true);
+});
+
+test("Sub2API rejects missing credentials and unsafe endpoints", async () => {
+  const missingKey = createProviderConnectors({ env: {}, fetchImpl: async () => assert.fail("must not fetch") });
+  await assert.rejects(
+    missingKey({ provider: "sub2api", payload: {} }),
+    (error) => error.code === "PROVIDER_NOT_CONFIGURED",
+  );
+
+  const unsafeUrl = createProviderConnectors({
+    env: { SUB2API_API_KEY: "configured", SUB2API_BASE_URL: "http://sub2api.example.test" },
+    fetchImpl: async () => assert.fail("must not fetch"),
+  });
+  await assert.rejects(
+    unsafeUrl({ provider: "sub2api", payload: {} }),
+    (error) => error.code === "CONNECTOR_URL_UNSAFE",
+  );
+});
+
 test("remote endpoints reject plaintext HTTP and URL credentials", async () => {
   assert.throws(
     () => validateConnectorUrl("http://api.example.test/v1", { kind: "remote" }),

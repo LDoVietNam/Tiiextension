@@ -54,7 +54,7 @@ export function normalizeConfig(raw, baseDir = process.cwd()) {
     api: {
       enabled: raw.api?.enabled ?? true,
       host: raw.api?.host || "127.0.0.1",
-      port: raw.api?.port || 1840,
+      port: raw.api?.port || 18401,
       ...raw.api,
       token_file: tokenFile
     },

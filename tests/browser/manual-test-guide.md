@@ -6,7 +6,7 @@ Chạy lệnh sau để mở trình duyệt và hiển thị hướng dẫn:
 
 ```powershell
 # Mở dashboard
-Start-Process "http://127.0.0.1:1840/ui/"
+Start-Process "http://127.0.0.1:18401/ui/"
 
 # Copy API key vào clipboard
 echo "tzcirtruyBU6bOj0zpW6HF6lS4ls0j9Qm2mb_ERhxeI" | Set-Clipboard
@@ -15,8 +15,8 @@ echo "tzcirtruyBU6bOj0zpW6HF6lS4ls0j9Qm2mb_ERhxeI" | Set-Clipboard
 ## Các bước kiểm thử thủ cộng (5 phút)
 
 1. **Mở trình duyệt** (Chrome/Edge)
-   - Truy cập: `http://127.0.0.1:1840/ui/`
-   - Hoặc chạy: `Start-Process "http://127.0.0.1:1840/ui/"`
+   - Truy cập: `http://127.0.0.1:18401/ui/`
+   - Hoặc chạy: `Start-Process "http://127.0.0.1:18401/ui/"`
 
 2. **Nhập API key**
    - API key: `tzcirtruyBU6bOj0zpW6HF6lS4ls0j9Qm2mb_ERhxeI`

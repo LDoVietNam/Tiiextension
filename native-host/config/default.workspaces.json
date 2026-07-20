@@ -36,7 +36,7 @@
   "api": {
     "enabled": true,
     "host": "127.0.0.1",
-    "port": 1840,
+    "port": 18401,
     "allowed_origins": ["chrome-extension://ojjbdgfmnedbnpadfnmgkolfmhipkefi"]
   }
 }

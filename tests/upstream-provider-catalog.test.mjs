@@ -24,6 +24,7 @@ const EXPECTED_PROVIDER_IDS = [
   "microsoft-designer-web",
   "deepai-web",
   "freetheai-openai",
+  "sub2api-openai",
   "edge-tts",
   "gtts",
   "felo-chat",
@@ -56,10 +57,12 @@ test("provider and model aliases resolve case-insensitively", () => {
   assert.equal(resolveProviderId("HailuoAI"), "minimax-agent-web");
   assert.equal(resolveProviderId("Microsoft Designer"), "microsoft-designer-web");
   assert.equal(resolveProvider("mxbai")?.id, "mixedbread-embeddings");
+  assert.equal(resolveProvider("Sub2API")?.id, "sub2api-openai");
   assert.equal(resolveProviderId("does-not-exist"), null);
 
   assert.equal(resolveModelId("MiniMax_Agent_Web"), "hailuoai/minimax-agent-web");
   assert.equal(resolveModelId("designer-image"), "microsoft-designer/image-generation");
+  assert.equal(resolveModel("sub2api-auto")?.model.id, "sub2api/auto");
   const resolved = resolveModel("speechmatics-transcribe");
   assert.equal(resolved?.providerId, "speechmatics-stt");
   assert.equal(resolved?.model.id, "speechmatics/transcribe");

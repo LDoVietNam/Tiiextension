@@ -4,7 +4,7 @@
 import { runtime, tabs, storage } from './browser-polyfill.js';
 import { sendNative, connectNative, startHeartbeat, stopHeartbeat, checkHeartbeat, getNativeStatus, onNativeStatus, startReconnectAlarm, stopReconnectAlarm } from './native-client.js';
 import { fetchGatewayModels } from './provider-gateway.js';
-import { parseStructuredBlocks } from './block-parser.js';
+import { executeChatGptBlocks } from './chatgpt-block-runtime.js';
 import { getCdpEngine } from './cdp-engine.js';
 import { getSessionManager } from './session-manager.js';
 import { getEventBus } from './event-bus.js';
@@ -16,6 +16,7 @@ const cdp = getCdpEngine();
 const sessions = getSessionManager();
 const bus = getEventBus();
 const modelSelector = getModelSelector();
+const chatGptBlockIdempotency = new Map();
 
 // Job bridge (OpenBrowser-style) on :5050 (fallback HTTP bridge)
 const BRIDGE_BASE = 'http://127.0.0.1:5050';
@@ -296,7 +297,7 @@ runtime.onMessage.addListener((message, sender, sendResponse) => {
   async function stopBackend() {
     // Try to stop via backend API if running
     try {
-      const resp = await fetch('http://127.0.0.1:1840/v1/orchestrator/down', { method: 'POST' });
+      const resp = await fetch('http://127.0.0.1:18401/v1/orchestrator/down', { method: 'POST' });
       return await resp.json();
     } catch {
       return { stopped: false, message: 'No backend to stop' };
@@ -631,43 +632,18 @@ async function handleMinimaxAgentMessage(type, payload, options, sender) {
 async function handleChatGptBlocks(payload, sender) {
   const { text, sendResultBack } = payload || {};
   if (!text || typeof text !== 'string') return { executed: false, reason: 'no text' };
-
-  const blocks = parseStructuredBlocks(text);
-  if (!blocks.length) return { executed: false, reason: 'no blocks found' };
-
-  const results = [];
-  for (const block of blocks) {
-    try {
-      let result;
-      if (block.type === 'tool_call') {
-        result = await sendNative('tool_call', block.payload);
-      } else if (block.type === 'payload_load') {
-        result = await sendNative('payload_load', block.payload);
-      } else if (block.type.startsWith('filesystem_')) {
-        result = await sendNative(block.type, block.payload);
-      } else if (block.type === 'agent_action') {
-        result = await sendNative('agent_action', block.payload);
-      } else if (block.type === 'task_result') {
-        result = await sendNative('task_result', block.payload);
-      } else if (block.type === 'task_event') {
-        result = await sendNative('task_event', block.payload);
-      } else {
-        result = { error: { message: `Unsupported block type: ${block.type}` } };
-      }
-      results.push({ blockId: block.blockId, ok: true, result });
-    } catch (error) {
-      results.push({
-        blockId: block.blockId,
-        ok: false,
-        error: {
-          message: error.message,
-          code: error.code,
-          retryable: Boolean(error.retryable),
-          details: error.details
-        }
-      });
-    }
-  }
+  const settings = await storage.local.get({
+    executionEnabled: true,
+    autoInjectResults: true,
+    autoApproveMutations: false,
+  });
+  const execution = await executeChatGptBlocks({
+    text,
+    settings,
+    completed: chatGptBlockIdempotency,
+    sendNative,
+  });
+  const results = execution.results;
 
   if (sendResultBack) {
     const fallbackTabId = sender.tab?.id || (await tabs.query({ url: ['https://chatgpt.com/*', 'https://chat.openai.com/*'] }))[0]?.id;
@@ -678,7 +654,7 @@ async function handleChatGptBlocks(payload, sender) {
     }
   }
 
-  return { executed: true, results, count: results.length };
+  return { ...execution, results, count: results.length };
 }
 
 // ====== Job Bridge SSE + proxy ======

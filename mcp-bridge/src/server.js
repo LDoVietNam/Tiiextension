@@ -2,7 +2,7 @@
 import { callCnagentTool } from "./cnagent-client.js";
 import { listMcpTools, mapMcpToolCall, GITHUB_TOOL_NAMES } from "./tool-mapper.js";
 
-const baseUrl = process.env.TIIEXTENSION_API_URL || "http://127.0.0.1:1840";
+const baseUrl = process.env.TIIEXTENSION_API_URL || "http://127.0.0.1:18401";
 const token = process.env.TIIEXTENSION_API_TOKEN || "";
 const githubToken = process.env.GITHUB_PERSONAL_ACCESS_TOKEN || "";
 let buffer = "";
