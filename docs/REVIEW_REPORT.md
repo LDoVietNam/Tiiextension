@@ -63,7 +63,7 @@
 
 ### Local File Access Paths
 1. **TiRouter Gateway (:1870)**: Extension → TiRouter → TiBrain → Context Bridge
-2. **Native Host Direct (:1840)**: Extension → Native Host → Filesystem/Git/Process tools
+2. **Native Host Direct (:18401)**: Extension → Native Host → Filesystem/Git/Process tools
 3. **Context Bridge (:3333)**: Extension → Context Bridge Server → Workspace tools
 
 ### Execution Mode
