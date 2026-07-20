@@ -10,6 +10,7 @@ import { getSessionManager } from './session-manager.js';
 import { getEventBus } from './event-bus.js';
 import { getModelSelector } from './model-selector.js';
 import { initWsBridge } from './ws-agent-bridge.js';
+import { createExtensionAgentTask } from './extension-agent-task.js';
 
 // Initialize engines
 const cdp = getCdpEngine();
@@ -145,6 +146,14 @@ runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (type === 'sidepanel.open') {
+    tabs.query({ active: true, currentWindow: true })
+      .then(([tab]) => chrome.sidePanel.open({ tabId: tab?.id }))
+      .then(() => sendResponse({ ok: true, result: { opened: true } }))
+      .catch((error) => sendResponse({ ok: false, error: { message: error.message, code: 'SIDEPANEL_OPEN_FAILED' } }));
+    return true;
+  }
+
   // Local runtime tool calls (fs.list, fs.read, fs.search_text, workspace.list, runtime.status)
   if (['fs.list', 'fs.read', 'fs.search_text', 'workspace.list', 'runtime.status'].includes(type)) {
     sendNative(type, payload, options)
@@ -249,6 +258,17 @@ runtime.onMessage.addListener((message, sender, sendResponse) => {
       return sendResponse({ connected: getNativeStatus().connected, hostVersion: getNativeStatus().hostVersion });
     }
     return sendResponse({ ok: false, error: { message: `Unknown orchestrator action: ${action}` } });
+  }
+
+  if (type === 'extension-agent.submit') {
+    Promise.resolve()
+      .then(() => sendNative('task.enqueue', createExtensionAgentTask(payload)))
+      .then((result) => sendResponse({ ok: true, result }))
+      .catch((error) => sendResponse({
+        ok: false,
+        error: { message: error.message, code: error.code, retryable: Boolean(error.retryable) },
+      }));
+    return true;
   }
 
   async function startBackend() {

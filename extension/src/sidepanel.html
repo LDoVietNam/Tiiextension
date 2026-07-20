@@ -16,10 +16,9 @@
         <button id="refresh-all" class="icon-button" type="button" title="Refresh all">↻</button>
       </header>
 
-      <section class="status-strip" aria-label="Backend connection status">
-        <span id="ctx-bridge-status" class="status-pill pending" title="Context Bridge · file/MCP tools · http://127.0.0.1:3333">File tools</span>
-        <span id="go-bridge-status" class="status-pill pending" title="Go Runtime Bridge · pairing · ws://127.0.0.1:9000">Runtime</span>
-        <span id="job-bridge-status" class="status-pill pending" title="Job Bridge · Run with ChatGPT · http://127.0.0.1:5050">Job Bridge</span>
+      <section class="status-strip" aria-label="Extension Agent status">
+        <span id="native-runtime-status" class="status-pill pending" title="Native runtime · 127.0.0.1:18401">Native runtime</span>
+        <span id="browser-context-status" class="status-pill pending" title="Browser tabs available to Extension Agent">Browser context</span>
       </section>
 
       <nav class="panel-tabs" aria-label="Agent workspace">
@@ -47,11 +46,11 @@
         </div>
         <textarea id="goal" rows="7" placeholder="Try: Explain how photosynthesis works or analyze this codebase..."></textarea>
         <div class="action-row">
-          <button id="run-goal" class="primary" type="button">Run with ChatGPT</button>
+          <button id="run-goal" class="primary" type="button">Submit browser task</button>
           <button id="cancel-task" class="secondary danger" type="button" disabled>Cancel</button>
           <button id="clear-chat" class="secondary" type="button" title="Clear chat history">🗑️</button>
         </div>
-        <p class="bridge-hint">Sends a job to the Job Bridge (<code>http://127.0.0.1:5050</code>) → your ChatGPT tab executes it.</p>
+        <p class="bridge-hint">Extension Agent handles browser automation and can request a structured handoff to the PC Automation Agent when runtime policy allows it.</p>
         <div id="task-summary" class="summary-card empty">No active task.</div>
         <div id="agent-messages" class="message-feed" aria-live="polite" aria-label="Agent conversation"></div>
       </section>

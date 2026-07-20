@@ -9,9 +9,11 @@ export async function runStaticChecks(projectRoot = path.resolve(path.dirname(fi
   const pkg = await readJson(path.join(projectRoot, "package.json"), failures);
   const popup = await fs.readFile(path.join(projectRoot, "extension/popup.html"), "utf8");
   const panel = await fs.readFile(path.join(projectRoot, "extension/src/sidepanel.html"), "utf8");
-  const modes = [...popup.matchAll(/data-mode="([^"]+)"/g)].map((match) => match[1]);
+  const popupControls = ["runtime-status", "start-backend", "stop-backend", "open-panel"];
   const panels = [...panel.matchAll(/data-panel="([^"]+)"/g)].map((match) => match[1]);
-  if (JSON.stringify(modes) !== JSON.stringify(["ui", "api", "tokens"])) failures.push(`Popup modes are ${JSON.stringify(modes)}`);
+  for (const id of popupControls) {
+    if (!popup.includes(`id="${id}"`)) failures.push(`Popup is missing runtime control: ${id}`);
+  }
   if (JSON.stringify(panels) !== JSON.stringify(["agent", "files", "changes", "activity"])) failures.push(`Side-panel tabs are ${JSON.stringify(panels)}`);
   if (manifest?.manifest_version !== 3) failures.push("Extension is not Manifest V3");
   if (manifest?.version !== "1.3.0") failures.push(`Manifest version is ${manifest?.version}`);
@@ -32,7 +34,7 @@ export async function runStaticChecks(projectRoot = path.resolve(path.dirname(fi
     error.failures = failures;
     throw error;
   }
-  return { ok: true, modes, panels, manifestVersion: manifest.version, packageVersion: pkg.version };
+  return { ok: true, popupControls, panels, manifestVersion: manifest.version, packageVersion: pkg.version };
 }
 
 async function readJson(filePath, failures) {
