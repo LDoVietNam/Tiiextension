@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('1MCP Dashboard E2E Verification', () => {
   const API_KEY = 'tzcirtruyBU6bOj0zpW6HF6lS4ls0j9Qm2mb_ERhxeI';
-  const DASHBOARD_URL = 'http://127.0.0.1:1840/ui/';
+  const DASHBOARD_URL = 'http://127.0.0.1:18401/ui/';
 
   test('should load dashboard with Vietnamese UI', async ({ page }) => {
     await page.goto(DASHBOARD_URL);
@@ -93,7 +93,7 @@ test.describe('1MCP Dashboard E2E Verification', () => {
 
 test.describe('Dashboard API Verification', () => {
   test('health endpoint responds', async ({ request }) => {
-    const response = await request.get('http://127.0.0.1:1840/health');
+    const response = await request.get('http://127.0.0.1:18401/health');
     expect(response.ok()).toBeTruthy();
     const body = await response.json();
     expect(body.version).toBeTruthy();
@@ -101,7 +101,7 @@ test.describe('Dashboard API Verification', () => {
   });
   
   test('tools endpoint works with idempotency key', async ({ request }) => {
-    const response = await request.post('http://127.0.0.1:1840/internal/tools/call', {
+    const response = await request.post('http://127.0.0.1:18401/internal/tools/call', {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer tzcirtruyBU6bOj0zpW6HF6lS4ls0j9Qm2mb_ERhxeI'
